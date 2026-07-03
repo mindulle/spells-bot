@@ -4,6 +4,7 @@ import { infraCommand } from '../src/commands/infra/index';
 import { cdnCommand } from '../src/commands/cdn/index';
 import { galleryCommand } from '../src/commands/gallery/index';
 import { playCommand } from '../src/commands/playgrounds/index';
+import { utilsCommand } from '../src/commands/utils/index';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const commands = [
   cdnCommand.data.toJSON(),
   galleryCommand.data.toJSON(),
   playCommand.data.toJSON(),
+  utilsCommand.data.toJSON(),
 ];
 
 const token = process.env.DISCORD_TOKEN;

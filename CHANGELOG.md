@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.3.0](https://github.com/mindulle/spells-bot/compare/v1.2.0...v1.3.0) (2026-07-03)
+
+
+### Features
+
+* **utils:** add /utils dog and /utils cat commands ([a3fe64a](https://github.com/mindulle/spells-bot/commit/a3fe64af7389524d19cfe525bd9f462d0527d457))
+* **utils:** Dog & Cat 봇 흡수 및 통합 ([2850920](https://github.com/mindulle/spells-bot/commit/285092066912335d63033466c0676f6e2c4b9cda))
+
+
+### Bug Fixes
+
+* **utils:** add filter parameter to exclude video formats from random.dog API ([4aa4015](https://github.com/mindulle/spells-bot/commit/4aa4015b1948b0a8e073e123e33f424e5205c888))
+* **utils:** add missing User-Agent headers to animal and food APIs ([c72abb9](https://github.com/mindulle/spells-bot/commit/c72abb9f23ba4c890431c85d435fb7471589a230))
+* **utils:** add User-Agent to wiki api to prevent 403 Forbidden ([8b71635](https://github.com/mindulle/spells-bot/commit/8b7163578e1ff6e01c372b4c6c795d24f94db4c4))
+* **utils:** switch dog API provider due to cloudflare 520 outage ([5288f29](https://github.com/mindulle/spells-bot/commit/5288f29a807572ccb9aa96d6e6abf5a1981319d7))
+* **utils:** 강아지 사진 API 서버 장애(520)로 인한 Provider 교체 ([a28ed10](https://github.com/mindulle/spells-bot/commit/a28ed1097beedf57917964c8f340d84ccc0b7eb5))
+* **utils:** 강아지 사진 API에서 mp4/webm 동영상 응답 제외 ([a98f16f](https://github.com/mindulle/spells-bot/commit/a98f16fb7bab21826f1fca245cea7af0f3ccefcd))
+* **utils:** 봇 API 호출 시 520/403 방지용 User-Agent 일괄 추가 ([135d345](https://github.com/mindulle/spells-bot/commit/135d345326f5b58b88bf641ca642957664f97959))
+* **utils:** 위키 검색 API 403 에러 수정 ([b85aeb1](https://github.com/mindulle/spells-bot/commit/b85aeb10381b983ea13e57204c267d4254c2af42))
+
 ## [1.2.0](https://github.com/mindulle/spells-bot/compare/v1.1.0...v1.2.0) (2026-07-03)
 
 

@@ -14,6 +14,22 @@ interface WikiSearchResponse {
   };
 }
 
+interface PokeApiResponse {
+  id: number;
+  name: string;
+  height: number;
+  weight: number;
+  types: Array<{ type: { name: string } }>;
+  sprites: {
+    front_default: string | null;
+    other?: {
+      'official-artwork'?: {
+        front_default: string | null;
+      };
+    };
+  };
+}
+
 export const utilsCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('utils')
@@ -31,6 +47,17 @@ export const utilsCommand: Command = {
     )
     .addSubcommand((subcommand) =>
       subcommand.setName('cat').setDescription('귀여운 고양이 사진을 가져옵니다.')
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('pokemon')
+        .setDescription('포켓몬 도감 정보를 가져옵니다.')
+        .addStringOption((option) =>
+          option
+            .setName('query')
+            .setDescription('포켓몬 영문 이름 또는 도감 번호')
+            .setRequired(true)
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -148,6 +175,62 @@ export const utilsCommand: Command = {
           await interaction.editReply({
             embeds: [createErrorEmbed('고양이 사진을 가져오는 중 오류가 발생했습니다.')],
           });
+        }
+        break;
+      }
+
+      case 'pokemon': {
+        const query = interaction.options.getString('query', true).toLowerCase().trim();
+        await interaction.deferReply();
+
+        try {
+          // PokeAPI
+          const response = await axios.get<PokeApiResponse>(
+            `https://pokeapi.co/api/v2/pokemon/${query}`,
+            {
+              headers: { 'User-Agent': DEFAULT_USER_AGENT },
+              timeout: 5000,
+            }
+          );
+
+          const data = response.data;
+          const imageUrl =
+            data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default;
+          const types = data.types?.map((t) => t.type.name).join(', ') || 'Unknown';
+          const height = (data.height / 10).toFixed(1); // dm to m
+          const weight = (data.weight / 10).toFixed(1); // hg to kg
+
+          const embed = new EmbedBuilder()
+            .setColor(Colors.INFO)
+            .setTitle(`Pokédex: #${data.id} ${data.name.toUpperCase()}`)
+            .addFields(
+              { name: '타입 (Types)', value: types, inline: true },
+              { name: '키 (Height)', value: `${height}m`, inline: true },
+              { name: '몸무게 (Weight)', value: `${weight}kg`, inline: true }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Powered by PokeAPI' });
+
+          if (imageUrl) {
+            embed.setThumbnail(imageUrl);
+          }
+
+          await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+          logger.error(`Failed to fetch pokemon info for ${query}`, error);
+          if (axios.isAxiosError(error) && error.response?.status === 404) {
+            await interaction.editReply({
+              embeds: [
+                createErrorEmbed(
+                  `"${query}" 포켓몬을 찾을 수 없습니다. 영문 이름이나 정확한 도감 번호를 입력해 주세요.`
+                ),
+              ],
+            });
+          } else {
+            await interaction.editReply({
+              embeds: [createErrorEmbed('포켓몬 정보를 가져오는 중 오류가 발생했습니다.')],
+            });
+          }
         }
         break;
       }

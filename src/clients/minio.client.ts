@@ -14,9 +14,12 @@ class MinioClientWrapper {
     const secretKey = process.env.MINIO_SECRET_KEY;
 
     if (endPoint && accessKey && secretKey) {
+      const portEnv = process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT, 10) : 443;
+      const port = isNaN(portEnv) ? 443 : portEnv;
+
       this.client = new Minio.Client({
         endPoint,
-        port: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT, 10) : 443,
+        port,
         useSSL: process.env.MINIO_USE_SSL !== 'false',
         accessKey,
         secretKey,
@@ -35,11 +38,11 @@ class MinioClientWrapper {
   }
 
   public async ping(): Promise<boolean> {
-    if (!this.client) return false;
+    const client = this.client;
+    if (!client) return false;
 
     try {
-      // Check if the default bucket exists to verify connection
-      await this.client.bucketExists(this.defaultBucket);
+      await client.bucketExists(this.defaultBucket);
       return true;
     } catch (error) {
       logger.error('MinIO ping failed', error);
@@ -48,15 +51,14 @@ class MinioClientWrapper {
   }
 
   public async purgeCache(target: string): Promise<boolean> {
-    if (!this.client) {
+    const client = this.client;
+    if (!client) {
       logger.info(`[MOCK] Purging MinIO target: ${target}`);
       return true;
     }
 
     try {
-      // Note: If 'target' is a directory, MinIO requires listing and deleting multiple objects.
-      // For simplicity, we assume target is a specific object key.
-      await this.client.removeObject(this.defaultBucket, target);
+      await client.removeObject(this.defaultBucket, target);
       logger.info(`Purged MinIO object: ${target}`);
       return true;
     } catch (error) {
@@ -66,7 +68,8 @@ class MinioClientWrapper {
   }
 
   public async getStats(): Promise<{ size: string; objects: number }> {
-    if (!this.client) {
+    const client = this.client;
+    if (!client) {
       return { size: '150.2 GB (Mock)', objects: 45210 };
     }
 
@@ -74,9 +77,7 @@ class MinioClientWrapper {
       let totalSize = 0;
       let totalObjects = 0;
 
-      // Stream objects to calculate stats
-      // This is a naive implementation; for huge buckets, Prometheus metrics are preferred.
-      const stream = this.client!.listObjectsV2(this.defaultBucket, '', true);
+      const stream = client.listObjectsV2(this.defaultBucket, '', true);
 
       stream.on('data', (obj) => {
         totalObjects++;

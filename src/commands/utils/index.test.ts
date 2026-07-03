@@ -85,6 +85,52 @@ describe('utilsCommand', () => {
     });
   });
 
+  describe('dog subcommand', () => {
+    it('should fetch an image and return a dog embed', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      mockInteraction.options.getSubcommand.mockReturnValue('dog');
+      mockedAxios.get.mockResolvedValueOnce({
+        data: { message: 'https://fake-dog.jpg', status: 'success' },
+      });
+
+      await utilsCommand.execute(mockInteraction as unknown as ChatInputCommandInteraction);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(mockInteraction.deferReply).toHaveBeenCalled();
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'https://dog.ceo/api/breeds/image/random',
+        expect.any(Object)
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const editReplyArg = mockInteraction.editReply.mock.calls[0][0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(editReplyArg.embeds[0].data.image.url).toBe('https://fake-dog.jpg');
+    });
+  });
+
+  describe('cat subcommand', () => {
+    it('should fetch an image and return a cat embed', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      mockInteraction.options.getSubcommand.mockReturnValue('cat');
+      mockedAxios.get.mockResolvedValueOnce({ data: [{ url: 'https://fake-cat.jpg' }] });
+
+      await utilsCommand.execute(mockInteraction as unknown as ChatInputCommandInteraction);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(mockInteraction.deferReply).toHaveBeenCalled();
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'https://api.thecatapi.com/v1/images/search',
+        expect.any(Object)
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const editReplyArg = mockInteraction.editReply.mock.calls[0][0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(editReplyArg.embeds[0].data.image.url).toBe('https://fake-cat.jpg');
+    });
+  });
+
   describe('wiki subcommand', () => {
     it('should fetch wiki summary and return embed', async () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access

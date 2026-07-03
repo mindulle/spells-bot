@@ -16,7 +16,7 @@ interface WikiSearchResponse {
 export const utilsCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('utils')
-    .setDescription('통합 유틸리티 커맨드 (Wiki, Photo, Food 등)')
+    .setDescription('통합 유틸리티 커맨드 (Wiki, Photo, Food, Dog, Cat 등)')
     .addSubcommand((subcommand) =>
       subcommand
         .setName('food')
@@ -24,6 +24,12 @@ export const utilsCommand: Command = {
     )
     .addSubcommand((subcommand) =>
       subcommand.setName('photo').setDescription('무작위 고화질 사진을 가져옵니다.')
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName('dog').setDescription('귀여운 강아지 사진을 가져옵니다.')
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName('cat').setDescription('귀여운 고양이 사진을 가져옵니다.')
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -41,7 +47,6 @@ export const utilsCommand: Command = {
       case 'food': {
         await interaction.deferReply();
         try {
-          // Foodish API (퍼블릭 음식 사진 API)
           const response = await axios.get<{ image: string }>('https://foodish-api.com/api/', {
             timeout: 5000,
           });
@@ -68,7 +73,6 @@ export const utilsCommand: Command = {
       case 'photo': {
         await interaction.deferReply();
         try {
-          // Picsum API (랜덤 사진 API, 캐시 방지를 위해 파라미터 추가)
           const imageUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
 
           const embed = new EmbedBuilder()
@@ -88,12 +92,63 @@ export const utilsCommand: Command = {
         break;
       }
 
+      case 'dog': {
+        await interaction.deferReply();
+        try {
+          const response = await axios.get<{ message: string; status: string }>(
+            'https://dog.ceo/api/breeds/image/random',
+            { timeout: 5000 }
+          );
+          const imageUrl = response.data.message;
+
+          const embed = new EmbedBuilder()
+            .setColor(Colors.INFO)
+            .setTitle('🐶 힐링 타임 (Dog)')
+            .setImage(imageUrl)
+            .setTimestamp()
+            .setFooter({ text: 'Powered by Dog API' });
+
+          await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+          logger.error('Failed to execute /utils dog', error);
+          await interaction.editReply({
+            embeds: [createErrorEmbed('강아지 사진을 가져오는 중 오류가 발생했습니다.')],
+          });
+        }
+        break;
+      }
+
+      case 'cat': {
+        await interaction.deferReply();
+        try {
+          const response = await axios.get<Array<{ url: string }>>(
+            'https://api.thecatapi.com/v1/images/search',
+            { timeout: 5000 }
+          );
+          const imageUrl = response.data[0].url;
+
+          const embed = new EmbedBuilder()
+            .setColor(Colors.WARNING)
+            .setTitle('🐱 힐링 타임 (Cat)')
+            .setImage(imageUrl)
+            .setTimestamp()
+            .setFooter({ text: 'Powered by The Cat API' });
+
+          await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+          logger.error('Failed to execute /utils cat', error);
+          await interaction.editReply({
+            embeds: [createErrorEmbed('고양이 사진을 가져오는 중 오류가 발생했습니다.')],
+          });
+        }
+        break;
+      }
+
       case 'wiki': {
         const query = interaction.options.getString('query', true);
         await interaction.deferReply();
 
         try {
-          // Wikipedia Search API (User-Agent 필수)
           const response = await axios.get<WikiSearchResponse>(
             `https://ko.wikipedia.org/w/api.php`,
             {

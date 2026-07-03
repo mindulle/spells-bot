@@ -7,6 +7,7 @@ import { registerInteractionCreateEvent } from './events/interactionCreate';
 import type { CommandMap } from './types/commands';
 
 // Import commands
+import { infraCommand } from './commands/infra';
 import { design } from './commands/design/index';
 import { blur } from './commands/aliases/blur';
 
@@ -28,6 +29,7 @@ async function main() {
 
     // Register commands
     const commands: CommandMap = new Map([
+      [infraCommand.data.name, infraCommand],
       [design.data.name, design],
       [blur.data.name, blur],
     ]);

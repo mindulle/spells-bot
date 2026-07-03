@@ -2,7 +2,6 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from '
 import type { Command } from '../../types/commands';
 import { cdnService } from '../../services/cdn.service';
 import { Colors, createErrorEmbed, createSuccessEmbed } from '../../utils/embed-builder';
-import { logger } from '../../utils/logger';
 
 export const cdnCommand: Command = {
   data: new SlashCommandBuilder()
@@ -28,58 +27,58 @@ export const cdnCommand: Command = {
   async execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
 
-    try {
-      switch (subcommand) {
-        case 'purge': {
-          const target = interaction.options.getString('target', true);
-          await interaction.deferReply();
+    switch (subcommand) {
+      case 'purge': {
+        const target = interaction.options.getString('target', true);
 
-          const success = await cdnService.purge(target);
-          if (success) {
-            await interaction.editReply({
-              embeds: [
-                createSuccessEmbed(`성공적으로 퍼지 명령을 수행했습니다.\n\`Target: ${target}\``),
-              ],
-            });
-          } else {
-            await interaction.editReply({
-              embeds: [createErrorEmbed(`퍼지 실패. 로그를 확인하세요.\n\`Target: ${target}\``)],
-            });
-          }
-          break;
-        }
-
-        case 'stats': {
-          await interaction.deferReply();
-          const stats = await cdnService.getStats();
-
-          const embed = new EmbedBuilder()
-            .setColor(Colors.INFO)
-            .setTitle('📊 MinIO Storage Statistics')
-            .addFields(
-              { name: 'Total Size', value: stats.size, inline: true },
-              { name: 'Object Count', value: stats.objects.toLocaleString(), inline: true }
-            )
-            .setTimestamp();
-
-          await interaction.editReply({ embeds: [embed] });
-          break;
-        }
-
-        default:
+        // Basic Path Traversal Validation
+        if (target !== 'all' && (target.includes('../') || target.includes('..\\'))) {
           await interaction.reply({
-            embeds: [createErrorEmbed('알 수 없는 서브커맨드입니다.')],
+            embeds: [createErrorEmbed('잘못된 경로입니다 (Path traversal attempt detected).')],
             ephemeral: true,
           });
+          return;
+        }
+
+        await interaction.deferReply();
+
+        const success = await cdnService.purge(target);
+        if (success) {
+          await interaction.editReply({
+            embeds: [
+              createSuccessEmbed(`성공적으로 퍼지 명령을 수행했습니다.\n\`Target: ${target}\``),
+            ],
+          });
+        } else {
+          await interaction.editReply({
+            embeds: [createErrorEmbed(`퍼지 실패. 로그를 확인하세요.\n\`Target: ${target}\``)],
+          });
+        }
+        break;
       }
-    } catch (error) {
-      logger.error(`Error executing /cdn ${subcommand}`, error);
-      const errorEmbed = createErrorEmbed('명령어 실행 중 오류가 발생했습니다.');
-      if (interaction.deferred || interaction.replied) {
-        await interaction.editReply({ embeds: [errorEmbed] });
-      } else {
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+
+      case 'stats': {
+        await interaction.deferReply();
+        const stats = await cdnService.getStats();
+
+        const embed = new EmbedBuilder()
+          .setColor(Colors.INFO)
+          .setTitle('📊 MinIO Storage Statistics')
+          .addFields(
+            { name: 'Total Size', value: stats.size, inline: true },
+            { name: 'Object Count', value: stats.objects.toLocaleString(), inline: true }
+          )
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+        break;
       }
+
+      default:
+        await interaction.reply({
+          embeds: [createErrorEmbed('알 수 없는 서브커맨드입니다.')],
+          ephemeral: true,
+        });
     }
   },
 };

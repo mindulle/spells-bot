@@ -1,12 +1,20 @@
 import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
-import { infraCommand } from '../src/commands/infra';
+import { infraCommand } from '../src/commands/infra/index';
+import { cdnCommand } from '../src/commands/cdn/index';
+import { galleryCommand } from '../src/commands/gallery/index';
 import { design } from '../src/commands/design/index';
 import { blur } from '../src/commands/aliases/blur';
 
 dotenv.config();
 
-const commands = [infraCommand.data.toJSON(), design.data.toJSON(), blur.data.toJSON()];
+const commands = [
+  infraCommand.data.toJSON(),
+  cdnCommand.data.toJSON(),
+  galleryCommand.data.toJSON(),
+  design.data.toJSON(),
+  blur.data.toJSON(),
+];
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.DISCORD_CLIENT_ID as string;

@@ -12,11 +12,13 @@ class MinioClient {
     return MinioClient.instance;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async ping(): Promise<boolean> {
     try {
       // TODO: Implement actual MinIO health check
       // For scaffolding, we simulate a successful ping
-      return Promise.resolve(true);
+
+      return true;
     } catch (error) {
       logger.error('MinIO ping failed', error);
       return false;

@@ -12,10 +12,12 @@ class N8nClient {
     return N8nClient.instance;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async ping(): Promise<boolean> {
     try {
       // TODO: Implement actual n8n webhook health check
-      return Promise.resolve(true);
+
+      return true;
     } catch (error) {
       logger.error('n8n ping failed', error);
       return false;

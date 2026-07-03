@@ -12,10 +12,12 @@ class K3sClient {
     return K3sClient.instance;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   public async ping(): Promise<boolean> {
     try {
       // TODO: Implement actual K3s API health check
-      return Promise.resolve(true);
+
+      return true;
     } catch (error) {
       logger.error('K3s ping failed', error);
       return false;

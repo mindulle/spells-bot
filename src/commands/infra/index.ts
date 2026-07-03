@@ -1,7 +1,8 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import type { Command } from '../../types/commands';
 import { healthService } from '../../services/health.service';
-import { Colors } from '../../utils/embed-builder';
+import { Colors, createErrorEmbed } from '../../utils/embed-builder';
+import { logger } from '../../utils/logger';
 
 export const infraCommand: Command = {
   data: new SlashCommandBuilder()
@@ -14,28 +15,57 @@ export const infraCommand: Command = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
-    if (interaction.options.getSubcommand() === 'status') {
-      await interaction.deferReply();
+    const subcommand = interaction.options.getSubcommand();
 
-      const status = await healthService.getSystemStatus();
-      const isAllHealthy = status.k3s && status.minio && status.n8n;
+    try {
+      switch (subcommand) {
+        case 'status': {
+          await interaction.deferReply();
 
-      const embed = new EmbedBuilder()
-        .setColor(isAllHealthy ? Colors.SUCCESS : Colors.ERROR)
-        .setTitle('🖥️ Sonagi Infrastructure Status')
-        .setDescription(
-          isAllHealthy
-            ? '모든 시스템이 정상적으로 가동 중입니다.'
-            : '일부 시스템에 장애가 감지되었습니다.'
-        )
-        .addFields(
-          { name: 'K3s Cluster', value: status.k3s ? '🟢 Online' : '🔴 Offline', inline: true },
-          { name: 'MinIO Storage', value: status.minio ? '🟢 Online' : '🔴 Offline', inline: true },
-          { name: 'n8n Workflows', value: status.n8n ? '🟢 Online' : '🔴 Offline', inline: true }
-        )
-        .setTimestamp(status.timestamp);
+          const status = await healthService.getSystemStatus();
+          const isAllHealthy = status.k3s && status.minio && status.n8n;
 
-      await interaction.editReply({ embeds: [embed] });
+          const embed = new EmbedBuilder()
+            .setColor(isAllHealthy ? Colors.SUCCESS : Colors.ERROR)
+            .setTitle('🖥️ Sonagi Infrastructure Status')
+            .setDescription(
+              isAllHealthy
+                ? '모든 시스템이 정상적으로 가동 중입니다.'
+                : '일부 시스템에 장애가 감지되었습니다.'
+            )
+            .addFields(
+              { name: 'K3s Cluster', value: status.k3s ? '🟢 Online' : '🔴 Offline', inline: true },
+              {
+                name: 'MinIO Storage',
+                value: status.minio ? '🟢 Online' : '🔴 Offline',
+                inline: true,
+              },
+              {
+                name: 'n8n Workflows',
+                value: status.n8n ? '🟢 Online' : '🔴 Offline',
+                inline: true,
+              }
+            )
+            .setTimestamp(status.timestamp);
+
+          await interaction.editReply({ embeds: [embed] });
+          break;
+        }
+        default:
+          await interaction.reply({
+            embeds: [createErrorEmbed('알 수 없는 서브커맨드입니다.')],
+            ephemeral: true,
+          });
+      }
+    } catch (error) {
+      logger.error(`Error executing /infra ${subcommand}`, error);
+      const errorEmbed = createErrorEmbed('명령어 실행 중 오류가 발생했습니다.');
+
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply({ embeds: [errorEmbed] });
+      } else {
+        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+      }
     }
   },
 };

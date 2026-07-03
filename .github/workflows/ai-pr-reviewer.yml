@@ -1,0 +1,37 @@
+name: AI PR Reviewer (Gemini Free Tier)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    name: Code Review by Nuri (Gemini)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 리뷰를 위해 전체 커밋 히스토리 필요
+
+      # coderabbitai와 유사하지만 Gemini를 지원하는 오픈소스 Action을 사용
+      - name: Gemini PR Reviewer
+        uses: fluxninja/gemini-pr-reviewer@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Google AI Studio에서 무료 발급받은 키를 깃허브 Repository Secrets에 넣으세요!
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        with:
+          debug: false
+          review_simple_changes: false
+          review_comment_lgtm: false
+          language: 'ko-KR'
+          system_message: |
+            너의 이름은 Nuri (Node.js & TypeScript Expert CTO)이다. 
+            Discord Bot 로직, TypeScript 타입 오류, 비효율적인 비동기 처리, 
+            잠재적인 예외(Error) 누락을 날카롭게 찾아내어 
+            한국어로 전문가답고 예의 바르게 PR 리뷰를 남겨라.

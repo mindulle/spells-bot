@@ -52,7 +52,23 @@ npm run dev
 
 ## 🏗️ 프로젝트 구조
 
-- `src/commands/infra/`: 인프라 상태 제어 커맨드
-- `src/commands/cdn/`: Cloudflare CDN 관리 커맨드
-- `src/commands/gallery/`: Eagle API 연동 검색 커맨드
-- `src/services/`: 외부 서비스 API 통합 계층
+```text
+spells-bot/
+├── src/
+│   ├── commands/              # 디스코드 슬래시 커맨드
+│   │   ├── infra/            # K3s, n8n 상태 제어
+│   │   ├── cdn/              # Cloudflare CDN 관리
+│   │   ├── gallery/          # Eagle Gallery 연동 검색
+│   │   ├── design/           # 디자인 관련 기능 (Blur 등)
+│   │   └── utils/            # 공통/일반 커맨드
+│   ├── services/             # 외부 API 연동 계층 (Cloudflare, K3s 등)
+│   ├── utils/                # 유틸리티 (로거, 임베드 빌더 등)
+│   ├── types/                # TypeScript 타입 정의
+│   ├── events/               # Discord.js 이벤트 핸들러
+│   └── index.ts              # 메인 봇 엔트리포인트
+├── .opencode/
+│   └── skills/               # AI 에이전트 작업 가이드 (SKILL.md)
+├── scripts/
+│   └── deploy-commands.ts    # 커맨드 전역 배포 스크립트
+└── package.json
+```

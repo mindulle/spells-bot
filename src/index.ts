@@ -11,6 +11,7 @@ import { infraCommand } from './commands/infra/index';
 import { cdnCommand } from './commands/cdn/index';
 import { galleryCommand } from './commands/gallery/index';
 import { playCommand } from './commands/playgrounds/index';
+import { utilsCommand } from './commands/utils/index';
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,7 @@ async function main() {
       [cdnCommand.data.name, cdnCommand],
       [galleryCommand.data.name, galleryCommand],
       [playCommand.data.name, playCommand],
+      [utilsCommand.data.name, utilsCommand],
     ]);
 
     logger.info(`Registered ${commands.size} commands`);

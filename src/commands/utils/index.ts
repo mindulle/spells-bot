@@ -18,7 +18,12 @@ export const utilsCommand: Command = {
     .setName('utils')
     .setDescription('통합 유틸리티 커맨드 (Wiki, Photo, Food 등)')
     .addSubcommand((subcommand) =>
-      subcommand.setName('food').setDescription('랜덤 음식/메뉴를 추천해 드립니다.')
+      subcommand
+        .setName('food')
+        .setDescription('침샘을 자극하는 무작위 음식 사진을 추천해 드립니다.')
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName('photo').setDescription('무작위 고화질 사진을 가져옵니다.')
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -36,36 +41,48 @@ export const utilsCommand: Command = {
       case 'food': {
         await interaction.deferReply();
         try {
-          const foods = [
-            '제육볶음',
-            '돈까스',
-            '국밥',
-            '마라탕',
-            '초밥',
-            '햄버거',
-            '피자',
-            '치킨',
-            '샐러드',
-            '짜장면',
-            '김치찌개',
-            '된장찌개',
-            '파스타',
-            '샌드위치',
-            '냉면',
-          ];
-          const randomFood = foods[Math.floor(Math.random() * foods.length)];
+          // Foodish API (퍼블릭 음식 사진 API)
+          const response = await axios.get<{ image: string }>('https://foodish-api.com/api/', {
+            timeout: 5000,
+          });
+          const imageUrl = response.data.image;
 
           const embed = new EmbedBuilder()
             .setColor(Colors.PRIMARY)
             .setTitle('🍽️ 오늘의 메뉴 추천')
-            .setDescription(`오늘 식사는 **${randomFood}** 어떠세요?`)
-            .setTimestamp();
+            .setDescription('먹음직스러운 사진을 가져왔어요! 오늘 식사 메뉴로 어떠세요?')
+            .setImage(imageUrl)
+            .setTimestamp()
+            .setFooter({ text: 'Powered by Foodish API' });
 
           await interaction.editReply({ embeds: [embed] });
         } catch (error) {
           logger.error('Failed to execute /utils food', error);
           await interaction.editReply({
-            embeds: [createErrorEmbed('메뉴 추천 중 오류가 발생했습니다.')],
+            embeds: [createErrorEmbed('음식 사진을 가져오는 중 오류가 발생했습니다.')],
+          });
+        }
+        break;
+      }
+
+      case 'photo': {
+        await interaction.deferReply();
+        try {
+          // Picsum API (랜덤 사진 API, 캐시 방지를 위해 파라미터 추가)
+          const imageUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
+
+          const embed = new EmbedBuilder()
+            .setColor(Colors.SUCCESS)
+            .setTitle('📸 랜덤 사진 갤러리 (PhotoBox)')
+            .setImage(imageUrl)
+            .setTimestamp()
+            .setFooter({ text: 'Powered by Lorem Picsum' });
+
+          await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+          logger.error('Failed to execute /utils photo', error);
+          await interaction.editReply({
+            embeds: [createErrorEmbed('사진을 가져오는 중 오류가 발생했습니다.')],
           });
         }
         break;
@@ -101,7 +118,6 @@ export const utilsCommand: Command = {
           }
 
           const firstResult = results[0];
-          // title, snippet (HTML 포함되어 있으므로 간단히 정규식으로 태그 제거)
           const cleanSnippet = firstResult.snippet.replace(/<\/?[^>]+(>|$)/g, '');
           const articleUrl = `https://ko.wikipedia.org/wiki/${encodeURIComponent(firstResult.title)}`;
 

@@ -1,9 +1,13 @@
+import axios from 'axios';
 import { logger } from '../utils/logger';
 
 class N8nClient {
   private static instance: N8nClient;
+  private healthUrl: string;
 
-  private constructor() {}
+  private constructor() {
+    this.healthUrl = process.env.N8N_HEALTH_WEBHOOK || 'http://localhost:5678/healthz';
+  }
 
   public static getInstance(): N8nClient {
     if (!N8nClient.instance) {
@@ -12,12 +16,11 @@ class N8nClient {
     return N8nClient.instance;
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   public async ping(): Promise<boolean> {
     try {
-      // TODO: Implement actual n8n webhook health check
-
-      return true;
+      const response = await axios.get(this.healthUrl, { timeout: 5000 });
+      // n8n returns {"status":"ok"} on /healthz
+      return response.status === 200;
     } catch (error) {
       logger.error('n8n ping failed', error);
       return false;

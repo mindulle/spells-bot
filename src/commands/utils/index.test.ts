@@ -98,7 +98,7 @@ describe('utilsCommand', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(mockInteraction.deferReply).toHaveBeenCalled();
       expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://random.dog/woof.json',
+        'https://random.dog/woof.json?filter=mp4,webm',
         expect.any(Object)
       );
 

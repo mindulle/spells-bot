@@ -6,7 +6,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
 } from 'discord.js';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
@@ -17,6 +17,11 @@ interface SandboxApiResponse {
   sandbox_url?: string;
   preview_url?: string;
   sandbox_id?: string;
+}
+
+interface ErrorResponseData {
+  error?: string;
+  message?: string;
 }
 
 export const playCommand: Command = {
@@ -48,6 +53,7 @@ export const playCommand: Command = {
             process.env.PLAYGROUNDS_API_URL || 'https://sonagi-playgrounds.sonagi-dev.workers.dev';
           const response = await axios.get<SandboxApiResponse>(`${apiUrl}/sandbox`, {
             params: { path: examplePath },
+            timeout: 10000,
           });
 
           const data = response.data;
@@ -78,8 +84,11 @@ export const playCommand: Command = {
 
           let errorMsg = '샌드박스 생성에 실패했습니다.';
           if (axios.isAxiosError(_error)) {
+            const axiosErr = _error as AxiosError<ErrorResponseData>;
             errorMsg =
-              _error.response?.data?.error || _error.response?.data?.message || _error.message;
+              axiosErr.response?.data?.error ||
+              axiosErr.response?.data?.message ||
+              axiosErr.message;
           } else if (_error instanceof Error) {
             errorMsg = _error.message;
           }

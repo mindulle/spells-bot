@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { infraCommand } from '../src/commands/infra/index';
 import { cdnCommand } from '../src/commands/cdn/index';
 import { galleryCommand } from '../src/commands/gallery/index';
+import { playCommand } from '../src/commands/playgrounds/index';
 
 dotenv.config();
 

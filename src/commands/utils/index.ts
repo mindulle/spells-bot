@@ -93,7 +93,7 @@ export const utilsCommand: Command = {
         await interaction.deferReply();
 
         try {
-          // Wikipedia Search API
+          // Wikipedia Search API (User-Agent 필수)
           const response = await axios.get<WikiSearchResponse>(
             `https://ko.wikipedia.org/w/api.php`,
             {
@@ -103,6 +103,9 @@ export const utilsCommand: Command = {
                 srsearch: query,
                 format: 'json',
                 utf8: 1,
+              },
+              headers: {
+                'User-Agent': 'SpellsBot/1.1.0 (https://github.com/mindulle/spells-bot)',
               },
               timeout: 5000,
             }

@@ -90,7 +90,7 @@ describe('utilsCommand', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       mockInteraction.options.getSubcommand.mockReturnValue('dog');
       mockedAxios.get.mockResolvedValueOnce({
-        data: { message: 'https://fake-dog.jpg', status: 'success' },
+        data: { url: 'https://fake-dog.jpg' },
       });
 
       await utilsCommand.execute(mockInteraction as unknown as ChatInputCommandInteraction);
@@ -98,7 +98,7 @@ describe('utilsCommand', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(mockInteraction.deferReply).toHaveBeenCalled();
       expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://dog.ceo/api/breeds/image/random',
+        'https://random.dog/woof.json',
         expect.any(Object)
       );
 

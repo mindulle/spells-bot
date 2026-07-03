@@ -97,21 +97,18 @@ export const utilsCommand: Command = {
       case 'dog': {
         await interaction.deferReply();
         try {
-          const response = await axios.get<{ message: string; status: string }>(
-            'https://dog.ceo/api/breeds/image/random',
-            {
-              headers: { 'User-Agent': DEFAULT_USER_AGENT },
-              timeout: 5000,
-            }
-          );
-          const imageUrl = response.data.message;
+          const response = await axios.get<{ url: string }>('https://random.dog/woof.json', {
+            headers: { 'User-Agent': DEFAULT_USER_AGENT },
+            timeout: 5000,
+          });
+          const imageUrl = response.data.url;
 
           const embed = new EmbedBuilder()
             .setColor(Colors.INFO)
             .setTitle('🐶 힐링 타임 (Dog)')
             .setImage(imageUrl)
             .setTimestamp()
-            .setFooter({ text: 'Powered by Dog API' });
+            .setFooter({ text: 'Powered by random.dog' });
 
           await interaction.editReply({ embeds: [embed] });
         } catch (error) {

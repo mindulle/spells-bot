@@ -7,11 +7,12 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (ignoring husky post-install scripts)
+RUN npm ci --ignore-scripts
 
 # Copy source code
 COPY src ./src
+COPY scripts ./scripts
 
 # Build TypeScript
 RUN npm run build
@@ -24,13 +25,13 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+# Install production dependencies only (ignoring husky)
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
-# Create non-root user
+# Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 

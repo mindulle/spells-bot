@@ -180,7 +180,8 @@ export const utilsCommand: Command = {
       }
 
       case 'pokemon': {
-        const query = interaction.options.getString('query', true).toLowerCase().trim();
+        const rawQuery = interaction.options.getString('query', true).toLowerCase().trim();
+        const query = encodeURIComponent(rawQuery.replace(/[\s.]+/g, '-'));
         await interaction.deferReply();
 
         try {

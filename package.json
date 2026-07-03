@@ -1,6 +1,6 @@
 {
   "name": "spells-bot",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "All-in-one Discord bot for design and development resources",
   "main": "dist/index.js",
   "scripts": {

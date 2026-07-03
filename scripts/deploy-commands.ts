@@ -1,17 +1,11 @@
 import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
-import { snippet } from '../src/commands/core/snippet';
-import { component } from '../src/commands/core/component';
-import { background } from '../src/commands/core/background';
 import { design } from '../src/commands/design/index';
 import { blur } from '../src/commands/aliases/blur';
 
 dotenv.config();
 
 const commands = [
-  snippet.data.toJSON(),
-  component.data.toJSON(),
-  background.data.toJSON(),
   design.data.toJSON(),
   blur.data.toJSON(),
 ];

@@ -3,6 +3,7 @@ import axios from 'axios';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
+import { DEFAULT_USER_AGENT } from '../../utils/constants';
 
 interface WikiSearchResponse {
   query?: {
@@ -48,6 +49,7 @@ export const utilsCommand: Command = {
         await interaction.deferReply();
         try {
           const response = await axios.get<{ image: string }>('https://foodish-api.com/api/', {
+            headers: { 'User-Agent': DEFAULT_USER_AGENT },
             timeout: 5000,
           });
           const imageUrl = response.data.image;
@@ -97,7 +99,10 @@ export const utilsCommand: Command = {
         try {
           const response = await axios.get<{ message: string; status: string }>(
             'https://dog.ceo/api/breeds/image/random',
-            { timeout: 5000 }
+            {
+              headers: { 'User-Agent': DEFAULT_USER_AGENT },
+              timeout: 5000,
+            }
           );
           const imageUrl = response.data.message;
 
@@ -123,7 +128,10 @@ export const utilsCommand: Command = {
         try {
           const response = await axios.get<Array<{ url: string }>>(
             'https://api.thecatapi.com/v1/images/search',
-            { timeout: 5000 }
+            {
+              headers: { 'User-Agent': DEFAULT_USER_AGENT },
+              timeout: 5000,
+            }
           );
           const imageUrl = response.data[0].url;
 

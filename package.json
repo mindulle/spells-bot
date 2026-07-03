@@ -32,6 +32,7 @@
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "@typescript-eslint/parser": "^6.16.0",
     "eslint": "^8.56.0",
+    "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "prettier": "^3.1.1",
@@ -46,6 +47,9 @@
   "lint-staged": {
     "*.ts": [
       "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml}": [
       "prettier --write"
     ]
   }

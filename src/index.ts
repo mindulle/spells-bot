@@ -7,9 +7,6 @@ import { registerInteractionCreateEvent } from './events/interactionCreate';
 import type { CommandMap } from './types/commands';
 
 // Import commands
-import { snippet } from './commands/core/snippet';
-import { component } from './commands/core/component';
-import { background } from './commands/core/background';
 import { design } from './commands/design/index';
 import { blur } from './commands/aliases/blur';
 
@@ -23,7 +20,6 @@ async function main() {
     // Validate required environment variables
     const token = assertEnvVariable('DISCORD_TOKEN');
     assertEnvVariable('DISCORD_CLIENT_ID');
-    assertEnvVariable('N8N_WEBHOOK_BASE_URL');
 
     // Create Discord client
     const client = new Client({
@@ -32,9 +28,6 @@ async function main() {
 
     // Register commands
     const commands: CommandMap = new Map([
-      [snippet.data.name, snippet],
-      [component.data.name, component],
-      [background.data.name, background],
       [design.data.name, design],
       [blur.data.name, blur],
     ]);
@@ -49,15 +42,15 @@ async function main() {
     await client.login(token);
 
     // Graceful shutdown
-    process.on('SIGINT', async () => {
+    process.on('SIGINT', () => {
       logger.info('Received SIGINT, shutting down gracefully...');
-      client.destroy();
+      void client.destroy();
       process.exit(0);
     });
 
-    process.on('SIGTERM', async () => {
+    process.on('SIGTERM', () => {
       logger.info('Received SIGTERM, shutting down gracefully...');
-      client.destroy();
+      void client.destroy();
       process.exit(0);
     });
   } catch (error) {

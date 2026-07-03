@@ -4,31 +4,33 @@ import { handleCommandError } from '../utils/error-handler';
 import type { CommandMap } from '../types/commands';
 
 export function registerInteractionCreateEvent(client: Client, commands: CommandMap): void {
-  client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-    if (!interaction.isChatInputCommand()) return;
+  client.on(Events.InteractionCreate, (interaction: Interaction) => {
+    void (async () => {
+      if (!interaction.isChatInputCommand()) return;
 
-    const command = commands.get(interaction.commandName);
+      const command = commands.get(interaction.commandName);
 
-    if (!command) {
-      logger.warn(`Unknown command: ${interaction.commandName}`);
-      return;
-    }
+      if (!command) {
+        logger.warn(`Unknown command: ${interaction.commandName}`);
+        return;
+      }
 
-    try {
-      logger.info('Command execution started', {
-        command: interaction.commandName,
-        user: interaction.user.tag,
-        guild: interaction.guild?.name,
-      });
+      try {
+        logger.info('Command execution started', {
+          command: interaction.commandName,
+          user: interaction.user.tag,
+          guild: interaction.guild?.name,
+        });
 
-      await command.execute(interaction);
+        await command.execute(interaction);
 
-      logger.info('Command execution completed', {
-        command: interaction.commandName,
-      });
-    } catch (error) {
-      logger.error('Command execution failed', error);
-      await handleCommandError(interaction, error);
-    }
+        logger.info('Command execution completed', {
+          command: interaction.commandName,
+        });
+      } catch (error) {
+        logger.error('Command execution failed', error);
+        await handleCommandError(interaction, error);
+      }
+    })();
   });
 }

@@ -35,3 +35,22 @@ export const commandName: Command = {
   },
 };
 ```
+
+## 5. 아키텍처 및 디자인 패턴 (3-Tier Layer드 구조)
+
+디스코드 봇은 기본적으로 커맨드 패턴으로 동작하지만, 유지보수성을 위해 반드시 아래의 계층형 설계를 따릅니다:
+
+### Tier 1: Presentation Layer (`src/commands/`)
+
+- **역할**: 사용자 입력 처리, Discord Embed UI 생성, 응답 전송.
+- **규칙**: 외부 API 통신이나 비즈니스 로직을 이곳에 직접 작성하지 않습니다. 오직 Service 계층의 함수만 호출합니다.
+
+### Tier 2: Business Logic Layer (`src/services/`, Facade 패턴)
+
+- **역할**: 인프라 상태 수집, 데이터 가공 및 비즈니스 로직 판단.
+- **규칙**: 커맨드 계층이 내부의 복잡한 통신을 알 필요가 없도록 `HealthService.getSystemStatus()` 처럼 추상화된 메서드(Facade)를 제공합니다.
+
+### Tier 3: Integration Layer (`src/clients/`, Adapter & Singleton 패턴)
+
+- **역할**: MinIO, K3s, n8n 등 외부 시스템과의 실제 통신을 담당.
+- **규칙**: 외부 API 스펙 변경에 대비해 어댑터 패턴으로 구현하며, 불필요한 네트워크 연결을 막기 위해 클라이언트 인스턴스는 싱글톤으로 유지합니다.

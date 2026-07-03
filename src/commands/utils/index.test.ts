@@ -131,6 +131,63 @@ describe('utilsCommand', () => {
     });
   });
 
+  describe('pokemon subcommand', () => {
+    it('should fetch pokemon data and return embed', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      mockInteraction.options.getSubcommand.mockReturnValue('pokemon');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      mockInteraction.options.getString.mockReturnValue('pikachu');
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          id: 25,
+          name: 'pikachu',
+          height: 4,
+          weight: 60,
+          types: [{ type: { name: 'electric' } }],
+          sprites: { front_default: 'https://fake-pikachu.jpg' },
+        },
+      });
+
+      await utilsCommand.execute(mockInteraction as unknown as ChatInputCommandInteraction);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(mockInteraction.deferReply).toHaveBeenCalled();
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        'https://pokeapi.co/api/v2/pokemon/pikachu',
+        expect.any(Object)
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const editReplyArg = mockInteraction.editReply.mock.calls[0][0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(editReplyArg.embeds[0].data.title).toContain('PIKACHU');
+    });
+
+    it('should handle 404 errors gracefully when pokemon is not found', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      mockInteraction.options.getSubcommand.mockReturnValue('pokemon');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      mockInteraction.options.getString.mockReturnValue('unknown-pokemon-name');
+
+      const notFoundError: any = new Error('Not Found');
+      notFoundError.isAxiosError = true;
+      notFoundError.response = { status: 404 };
+      mockedAxios.get.mockRejectedValueOnce(notFoundError);
+      mockedAxios.isAxiosError.mockReturnValueOnce(true);
+
+      await utilsCommand.execute(mockInteraction as unknown as ChatInputCommandInteraction);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(mockInteraction.editReply).toHaveBeenCalled();
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const editReplyArg = mockInteraction.editReply.mock.calls[0][0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(editReplyArg.embeds[0].data.description).toContain('찾을 수 없습니다');
+    });
+  });
+
   describe('wiki subcommand', () => {
     it('should fetch wiki summary and return embed', async () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access

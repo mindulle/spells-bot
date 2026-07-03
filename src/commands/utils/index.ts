@@ -97,10 +97,13 @@ export const utilsCommand: Command = {
       case 'dog': {
         await interaction.deferReply();
         try {
-          const response = await axios.get<{ url: string }>('https://random.dog/woof.json', {
-            headers: { 'User-Agent': DEFAULT_USER_AGENT },
-            timeout: 5000,
-          });
+          const response = await axios.get<{ url: string }>(
+            'https://random.dog/woof.json?filter=mp4,webm',
+            {
+              headers: { 'User-Agent': DEFAULT_USER_AGENT },
+              timeout: 5000,
+            }
+          );
           const imageUrl = response.data.url;
 
           const embed = new EmbedBuilder()

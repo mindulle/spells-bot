@@ -48,6 +48,7 @@ export const utilsCommand: Command = {
         await interaction.deferReply();
         try {
           const response = await axios.get<{ image: string }>('https://foodish-api.com/api/', {
+            headers: { 'User-Agent': 'SpellsBot/1.3.0 (https://github.com/mindulle/spells-bot)' },
             timeout: 5000,
           });
           const imageUrl = response.data.image;
@@ -97,7 +98,10 @@ export const utilsCommand: Command = {
         try {
           const response = await axios.get<{ message: string; status: string }>(
             'https://dog.ceo/api/breeds/image/random',
-            { timeout: 5000 }
+            {
+              headers: { 'User-Agent': 'SpellsBot/1.3.0 (https://github.com/mindulle/spells-bot)' },
+              timeout: 5000,
+            }
           );
           const imageUrl = response.data.message;
 
@@ -123,7 +127,10 @@ export const utilsCommand: Command = {
         try {
           const response = await axios.get<Array<{ url: string }>>(
             'https://api.thecatapi.com/v1/images/search',
-            { timeout: 5000 }
+            {
+              headers: { 'User-Agent': 'SpellsBot/1.3.0 (https://github.com/mindulle/spells-bot)' },
+              timeout: 5000,
+            }
           );
           const imageUrl = response.data[0].url;
 

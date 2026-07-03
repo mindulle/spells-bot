@@ -16,13 +16,29 @@ class MinioClient {
   public async ping(): Promise<boolean> {
     try {
       // TODO: Implement actual MinIO health check
-      // For scaffolding, we simulate a successful ping
-
       return true;
     } catch (error) {
       logger.error('MinIO ping failed', error);
       return false;
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async purgeCache(target: string): Promise<boolean> {
+    try {
+      // TODO: Implement MinIO cache/file purge logic
+      logger.info(`Mock purging MinIO target: ${target}`);
+      return true;
+    } catch (error) {
+      logger.error(`MinIO purge failed for ${target}`, error);
+      return false;
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async getStats(): Promise<{ size: string; objects: number }> {
+    // TODO: Fetch actual MinIO bucket statistics
+    return { size: '150.2 GB', objects: 45210 };
   }
 }
 

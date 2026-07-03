@@ -10,7 +10,8 @@ const commands = [
   infraCommand.data.toJSON(),
   cdnCommand.data.toJSON(),
   galleryCommand.data.toJSON(),
-    ];
+  playCommand.data.toJSON(),
+];
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.DISCORD_CLIENT_ID as string;

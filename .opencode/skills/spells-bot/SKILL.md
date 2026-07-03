@@ -5,14 +5,14 @@
 ## 1. 프로젝트 정체성
 
 - `spells-bot`은 Sonagi 생태계의 **인프라 관제 및 DevOps 유틸리티 봇**입니다.
-- 주요 목적: K3s 상태 확인, n8n 파이프라인 헬스체크, Cloudflare CDN 제어, Eagle Gallery 레퍼런스 조회.
+- 주요 목적: K3s 상태 확인, n8n 파이프라인 헬스체크, MinIO 기반 CDN 및 스토리지 제어, Eagle Gallery 레퍼런스 조회.
 
 ## 2. 디렉토리 구조 및 컨벤션
 
 - **`src/commands/infra/`**: K3s, n8n 등 내부 인프라 상태 제어 및 조회 (`/infra`)
-- **`src/commands/cdn/`**: Cloudflare 연동, 캐시 퍼지 및 통계 (`/cdn`)
+- **`src/commands/cdn/`**: MinIO 스토리지 연동, 버킷 상태 및 파일 관리 (`/cdn`)
 - **`src/commands/gallery/`**: Eagle API 연동 디자인/레퍼런스 검색 (`/gallery`)
-- **`src/services/`**: 각 도메인별 API 통신 로직 격리 (`cloudflare.service.ts`, `k3s.service.ts`, `eagle.service.ts` 등)
+- **`src/services/`**: 각 도메인별 API 통신 로직 격리 (`minio.service.ts`, `k3s.service.ts`, `eagle.service.ts` 등)
 
 ## 3. 코드 컨벤션
 

@@ -10,6 +10,7 @@ import type { CommandMap } from './types/commands';
 import { infraCommand } from './commands/infra/index';
 import { cdnCommand } from './commands/cdn/index';
 import { galleryCommand } from './commands/gallery/index';
+import { playCommand } from './commands/playgrounds/index';
 
 // Load environment variables
 dotenv.config();
@@ -32,6 +33,7 @@ async function main() {
       [infraCommand.data.name, infraCommand],
       [cdnCommand.data.name, cdnCommand],
       [galleryCommand.data.name, galleryCommand],
+      [playCommand.data.name, playCommand],
     ]);
 
     logger.info(`Registered ${commands.size} commands`);

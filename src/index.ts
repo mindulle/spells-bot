@@ -14,6 +14,7 @@ import { cdnCommand } from './commands/cdn/index';
 import { galleryCommand } from './commands/gallery/index';
 import { playCommand } from './commands/playgrounds/index';
 import { utilsCommand } from './commands/utils/index';
+import { paperclipCommand } from './commands/paperclip/index';
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +45,7 @@ async function main() {
       [galleryCommand.data.name, galleryCommand],
       [playCommand.data.name, playCommand],
       [utilsCommand.data.name, utilsCommand],
+      [paperclipCommand.data.name, paperclipCommand],
     ]);
 
     logger.info(`Registered ${commands.size} commands`);

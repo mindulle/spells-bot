@@ -55,5 +55,36 @@ export class PaperclipService {
     }
   }
 
-  // TODO: 이슈 리스트 조회 로직 (listIssues), 상태 업데이트 로직 추가
+  /**
+   * 이슈 리스트를 조회합니다.
+   * @param limit 가져올 이슈 개수 (기본 10개)
+   */
+  static async listIssues(limit: number = 10): Promise<PaperclipIssueResponse[]> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      // NOTE: 실제 페이퍼클립 API 규격에 맞춰 수정 필요
+      const response = await axios.get<PaperclipIssueResponse[]>(`${PAPERCLIP_API_URL}/issues`, {
+        params: { limit },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to fetch Paperclip issues. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
 }

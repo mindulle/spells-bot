@@ -4,6 +4,11 @@ import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
 import { PaperclipService } from '../../services/paperclip';
 
+const DEFAULT_COMPANY_ID =
+  process.env.PAPERCLIP_COMPANY_ID_MINDULLE || '3fa0dfa2-9f91-4002-8012-ac598bbb4761';
+const LIFE_COMPANY_ID =
+  process.env.PAPERCLIP_COMPANY_ID_LIFE || 'bdda2a51-1f01-42fa-a495-ce2a675122d1';
+
 export const paperclipCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('이슈')
@@ -21,6 +26,16 @@ export const paperclipCommand: Command = {
             .setDescription('이슈의 상세 내용을 입력하세요. (선택사항)')
             .setRequired(false)
         )
+        .addStringOption((option) =>
+          option
+            .setName('회사')
+            .setDescription('생성할 회사를 선택하세요. (기본: Mindulle Studio)')
+            .setRequired(false)
+            .addChoices(
+              { name: 'Mindulle Studio (기본)', value: 'mindulle' },
+              { name: 'LIFE (개인)', value: 'life' }
+            )
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -34,6 +49,16 @@ export const paperclipCommand: Command = {
             .setMinValue(1)
             .setMaxValue(20)
         )
+        .addStringOption((option) =>
+          option
+            .setName('회사')
+            .setDescription('조회할 회사를 선택하세요. (기본: Mindulle Studio)')
+            .setRequired(false)
+            .addChoices(
+              { name: 'Mindulle Studio (기본)', value: 'mindulle' },
+              { name: 'LIFE (개인)', value: 'life' }
+            )
+        )
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -42,6 +67,8 @@ export const paperclipCommand: Command = {
     if (subcommand === '생성') {
       const title = interaction.options.getString('제목', true);
       const description = interaction.options.getString('내용') || '상세 내용 없음';
+      const companyChoice = interaction.options.getString('회사') || 'mindulle';
+      const companyId = companyChoice === 'life' ? LIFE_COMPANY_ID : DEFAULT_COMPANY_ID;
 
       if (!process.env.PAPERCLIP_API_TOKEN) {
         await interaction.reply({
@@ -58,7 +85,7 @@ export const paperclipCommand: Command = {
 
       try {
         // Paperclip API를 호출하여 실제 이슈 생성
-        const issue = await PaperclipService.createIssue(title, description);
+        const issue = await PaperclipService.createIssue(companyId, title, description);
 
         // 성공 시 응답할 디스코드 임베드 생성
         const embed = new EmbedBuilder()
@@ -81,6 +108,8 @@ export const paperclipCommand: Command = {
       }
     } else if (subcommand === '조회') {
       const limit = interaction.options.getInteger('개수') || 5;
+      const companyChoice = interaction.options.getString('회사') || 'mindulle';
+      const companyId = companyChoice === 'life' ? LIFE_COMPANY_ID : DEFAULT_COMPANY_ID;
 
       if (!process.env.PAPERCLIP_API_TOKEN) {
         await interaction.reply({
@@ -95,7 +124,7 @@ export const paperclipCommand: Command = {
       await interaction.deferReply();
 
       try {
-        const issues = await PaperclipService.listIssues(limit);
+        const issues = await PaperclipService.listIssues(companyId, limit);
 
         if (!Array.isArray(issues) || issues.length === 0) {
           const emptyEmbed = new EmbedBuilder()

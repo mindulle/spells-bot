@@ -3,7 +3,6 @@ import { logger } from '../utils/logger';
 
 // TODO: 환경 변수 세팅 필요 (.env 파일에 PAPERCLIP_API_URL, PAPERCLIP_API_TOKEN 추가)
 const PAPERCLIP_API_URL = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
-const PAPERCLIP_COMPANY_ID = process.env.PAPERCLIP_COMPANY_ID || '';
 
 export interface PaperclipIssueResponse {
   id: string;
@@ -16,19 +15,24 @@ export interface PaperclipIssueResponse {
 export class PaperclipService {
   /**
    * 새로운 이슈를 생성합니다.
+   * @param companyId 대상 회사 ID
    * @param title 이슈 제목
    * @param description 이슈 상세 내용
    */
-  static async createIssue(title: string, description: string): Promise<PaperclipIssueResponse> {
+  static async createIssue(
+    companyId: string,
+    title: string,
+    description: string
+  ): Promise<PaperclipIssueResponse> {
     const token = process.env.PAPERCLIP_API_TOKEN;
-    if (!token || !PAPERCLIP_COMPANY_ID) {
-      throw new Error('PAPERCLIP_API_TOKEN or PAPERCLIP_COMPANY_ID is not configured.');
+    if (!token || !companyId) {
+      throw new Error('PAPERCLIP_API_TOKEN or COMPANY_ID is not configured.');
     }
 
     try {
       // NOTE: 실제 페이퍼클립 API 규격에 맞춰 수정 필요
       const response = await axios.post<PaperclipIssueResponse>(
-        `${PAPERCLIP_API_URL}/companies/${PAPERCLIP_COMPANY_ID}/issues`,
+        `${PAPERCLIP_API_URL}/companies/${companyId}/issues`,
         {
           title,
           description,
@@ -58,18 +62,22 @@ export class PaperclipService {
 
   /**
    * 이슈 리스트를 조회합니다.
+   * @param companyId 대상 회사 ID
    * @param limit 가져올 이슈 개수 (기본 10개)
    */
-  static async listIssues(limit: number = 10): Promise<PaperclipIssueResponse[]> {
+  static async listIssues(
+    companyId: string,
+    limit: number = 10
+  ): Promise<PaperclipIssueResponse[]> {
     const token = process.env.PAPERCLIP_API_TOKEN;
-    if (!token || !PAPERCLIP_COMPANY_ID) {
-      throw new Error('PAPERCLIP_API_TOKEN or PAPERCLIP_COMPANY_ID is not configured.');
+    if (!token || !companyId) {
+      throw new Error('PAPERCLIP_API_TOKEN or COMPANY_ID is not configured.');
     }
 
     try {
       // NOTE: 실제 페이퍼클립 API 규격에 맞춰 수정 필요
       const response = await axios.get<PaperclipIssueResponse[]>(
-        `${PAPERCLIP_API_URL}/companies/${PAPERCLIP_COMPANY_ID}/issues`,
+        `${PAPERCLIP_API_URL}/companies/${companyId}/issues`,
         {
           params: { limit },
           headers: {

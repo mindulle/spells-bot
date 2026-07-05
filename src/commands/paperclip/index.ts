@@ -21,6 +21,19 @@ export const paperclipCommand: Command = {
             .setDescription('이슈의 상세 내용을 입력하세요. (선택사항)')
             .setRequired(false)
         )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('조회')
+        .setDescription('페이퍼클립에 등록된 최근 이슈 목록을 조회합니다.')
+        .addIntegerOption((option) =>
+          option
+            .setName('개수')
+            .setDescription('조회할 이슈 개수 (기본 5개, 최대 20개)')
+            .setRequired(false)
+            .setMinValue(1)
+            .setMaxValue(20)
+        )
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -64,6 +77,63 @@ export const paperclipCommand: Command = {
         logger.error('Error in /이슈 생성 command:', error);
         await interaction.editReply({
           embeds: [createErrorEmbed('이슈를 생성하는 중 서버 통신 오류가 발생했습니다.')],
+        });
+      }
+    } else if (subcommand === '조회') {
+      const limit = interaction.options.getInteger('개수') || 5;
+
+      if (!process.env.PAPERCLIP_API_TOKEN) {
+        await interaction.reply({
+          embeds: [
+            createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 누락)'),
+          ],
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await interaction.deferReply();
+
+      try {
+        const issues = await PaperclipService.listIssues(limit);
+
+        if (!Array.isArray(issues) || issues.length === 0) {
+          const emptyEmbed = new EmbedBuilder()
+            .setColor(Colors.INFO)
+            .setTitle('📋 이슈 목록')
+            .setDescription('현재 등록된 이슈가 없습니다.')
+            .setFooter({ text: 'Paperclip 연동' })
+            .setTimestamp();
+
+          await interaction.editReply({ embeds: [emptyEmbed] });
+          return;
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(Colors.INFO)
+          .setTitle(`📋 최근 이슈 목록 (Top ${issues.length})`)
+          .setFooter({ text: 'Paperclip 연동' })
+          .setTimestamp();
+
+        let description = '';
+        issues.forEach((issue) => {
+          // 상태에 따른 이모지 표시
+          let statusEmoji = '⚪';
+          if (issue.status === 'done' || issue.status === 'completed') statusEmoji = '✅';
+          else if (issue.status === 'in_progress') statusEmoji = '🏃';
+          else if (issue.status === 'blocked') statusEmoji = '🚫';
+          else if (issue.status === 'cancelled') statusEmoji = '❌';
+
+          description += `${statusEmoji} **[${issue.id?.substring(0, 8) || 'N/A'}]** ${issue.title || '제목 없음'}\n`;
+        });
+
+        embed.setDescription(description || '이슈를 불러올 수 없습니다.');
+
+        await interaction.editReply({ embeds: [embed] });
+      } catch (error) {
+        logger.error('Error in /이슈 조회 command:', error);
+        await interaction.editReply({
+          embeds: [createErrorEmbed('이슈 목록을 불러오는 중 서버 통신 오류가 발생했습니다.')],
         });
       }
     }

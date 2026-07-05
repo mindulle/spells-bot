@@ -26,7 +26,11 @@ async function main() {
     // Validate required environment variables
     const token = assertEnvVariable('DISCORD_TOKEN');
     assertEnvVariable('DISCORD_CLIENT_ID');
-    assertEnvVariable('PAPERCLIP_API_TOKEN');
+
+    // Optional environment variables
+    if (!process.env.PAPERCLIP_API_TOKEN) {
+      logger.warn('PAPERCLIP_API_TOKEN is not set. /이슈 command will not work.');
+    }
 
     // Create Discord client
     const client = new Client({

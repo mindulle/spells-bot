@@ -30,6 +30,16 @@ export const paperclipCommand: Command = {
       const title = interaction.options.getString('제목', true);
       const description = interaction.options.getString('내용') || '상세 내용 없음';
 
+      if (!process.env.PAPERCLIP_API_TOKEN) {
+        await interaction.reply({
+          embeds: [
+            createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 누락)'),
+          ],
+          ephemeral: true,
+        });
+        return;
+      }
+
       // 응답 지연 (API 통신 시간이 걸릴 수 있으므로 deferReply 처리)
       await interaction.deferReply();
 

@@ -21,6 +21,16 @@ export const paperclipCommand: Command = {
             .setDescription('이슈의 상세 내용을 입력하세요. (선택사항)')
             .setRequired(false)
         )
+        .addStringOption((option) =>
+          option
+            .setName('회사')
+            .setDescription('생성할 회사를 선택하세요. (기본: Mindulle Studio)')
+            .setRequired(false)
+            .addChoices(
+              { name: 'Mindulle Studio (기본)', value: 'mindulle' },
+              { name: 'LIFE (개인)', value: 'life' }
+            )
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -34,6 +44,16 @@ export const paperclipCommand: Command = {
             .setMinValue(1)
             .setMaxValue(20)
         )
+        .addStringOption((option) =>
+          option
+            .setName('회사')
+            .setDescription('조회할 회사를 선택하세요. (기본: Mindulle Studio)')
+            .setRequired(false)
+            .addChoices(
+              { name: 'Mindulle Studio (기본)', value: 'mindulle' },
+              { name: 'LIFE (개인)', value: 'life' }
+            )
+        )
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -42,11 +62,18 @@ export const paperclipCommand: Command = {
     if (subcommand === '생성') {
       const title = interaction.options.getString('제목', true);
       const description = interaction.options.getString('내용') || '상세 내용 없음';
+      const companyChoice = interaction.options.getString('회사') || 'mindulle';
 
-      if (!process.env.PAPERCLIP_API_TOKEN) {
+      const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
+      const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
+      const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
+
+      if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
         await interaction.reply({
           embeds: [
-            createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 누락)'),
+            createErrorEmbed(
+              '현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 또는 회사 ID 누락)'
+            ),
           ],
           ephemeral: true,
         });
@@ -58,7 +85,7 @@ export const paperclipCommand: Command = {
 
       try {
         // Paperclip API를 호출하여 실제 이슈 생성
-        const issue = await PaperclipService.createIssue(title, description);
+        const issue = await PaperclipService.createIssue(companyId, title, description);
 
         // 성공 시 응답할 디스코드 임베드 생성
         const embed = new EmbedBuilder()
@@ -81,11 +108,18 @@ export const paperclipCommand: Command = {
       }
     } else if (subcommand === '조회') {
       const limit = interaction.options.getInteger('개수') || 5;
+      const companyChoice = interaction.options.getString('회사') || 'mindulle';
 
-      if (!process.env.PAPERCLIP_API_TOKEN) {
+      const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
+      const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
+      const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
+
+      if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
         await interaction.reply({
           embeds: [
-            createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 누락)'),
+            createErrorEmbed(
+              '현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 또는 회사 ID 누락)'
+            ),
           ],
           ephemeral: true,
         });
@@ -95,7 +129,7 @@ export const paperclipCommand: Command = {
       await interaction.deferReply();
 
       try {
-        const issues = await PaperclipService.listIssues(limit);
+        const issues = await PaperclipService.listIssues(companyId, limit);
 
         if (!Array.isArray(issues) || issues.length === 0) {
           const emptyEmbed = new EmbedBuilder()

@@ -4,11 +4,6 @@ import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
 import { PaperclipService } from '../../services/paperclip';
 
-const DEFAULT_COMPANY_ID =
-  process.env.PAPERCLIP_COMPANY_ID_MINDULLE || '3fa0dfa2-9f91-4002-8012-ac598bbb4761';
-const LIFE_COMPANY_ID =
-  process.env.PAPERCLIP_COMPANY_ID_LIFE || 'bdda2a51-1f01-42fa-a495-ce2a675122d1';
-
 export const paperclipCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('이슈')
@@ -68,7 +63,12 @@ export const paperclipCommand: Command = {
       const title = interaction.options.getString('제목', true);
       const description = interaction.options.getString('내용') || '상세 내용 없음';
       const companyChoice = interaction.options.getString('회사') || 'mindulle';
-      const companyId = companyChoice === 'life' ? LIFE_COMPANY_ID : DEFAULT_COMPANY_ID;
+
+      const defaultCompanyId =
+        process.env.PAPERCLIP_COMPANY_ID_MINDULLE || '3fa0dfa2-9f91-4002-8012-ac598bbb4761';
+      const lifeCompanyId =
+        process.env.PAPERCLIP_COMPANY_ID_LIFE || 'bdda2a51-1f01-42fa-a495-ce2a675122d1';
+      const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
 
       if (!process.env.PAPERCLIP_API_TOKEN) {
         await interaction.reply({
@@ -109,7 +109,12 @@ export const paperclipCommand: Command = {
     } else if (subcommand === '조회') {
       const limit = interaction.options.getInteger('개수') || 5;
       const companyChoice = interaction.options.getString('회사') || 'mindulle';
-      const companyId = companyChoice === 'life' ? LIFE_COMPANY_ID : DEFAULT_COMPANY_ID;
+
+      const defaultCompanyId =
+        process.env.PAPERCLIP_COMPANY_ID_MINDULLE || '3fa0dfa2-9f91-4002-8012-ac598bbb4761';
+      const lifeCompanyId =
+        process.env.PAPERCLIP_COMPANY_ID_LIFE || 'bdda2a51-1f01-42fa-a495-ce2a675122d1';
+      const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
 
       if (!process.env.PAPERCLIP_API_TOKEN) {
         await interaction.reply({

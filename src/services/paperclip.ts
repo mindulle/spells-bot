@@ -1,9 +1,6 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
 
-// TODO: 환경 변수 세팅 필요 (.env 파일에 PAPERCLIP_API_URL, PAPERCLIP_API_TOKEN 추가)
-const PAPERCLIP_API_URL = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
-
 export interface PaperclipIssueResponse {
   id: string;
   title: string;
@@ -25,6 +22,8 @@ export class PaperclipService {
     description: string
   ): Promise<PaperclipIssueResponse> {
     const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
     if (!token || !companyId) {
       throw new Error('PAPERCLIP_API_TOKEN or COMPANY_ID is not configured.');
     }
@@ -32,7 +31,7 @@ export class PaperclipService {
     try {
       // NOTE: 실제 페이퍼클립 API 규격에 맞춰 수정 필요
       const response = await axios.post<PaperclipIssueResponse>(
-        `${PAPERCLIP_API_URL}/companies/${companyId}/issues`,
+        `${apiUrl}/companies/${companyId}/issues`,
         {
           title,
           description,
@@ -70,6 +69,8 @@ export class PaperclipService {
     limit: number = 10
   ): Promise<PaperclipIssueResponse[]> {
     const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
     if (!token || !companyId) {
       throw new Error('PAPERCLIP_API_TOKEN or COMPANY_ID is not configured.');
     }
@@ -77,7 +78,7 @@ export class PaperclipService {
     try {
       // NOTE: 실제 페이퍼클립 API 규격에 맞춰 수정 필요
       const response = await axios.get<PaperclipIssueResponse[]>(
-        `${PAPERCLIP_API_URL}/companies/${companyId}/issues`,
+        `${apiUrl}/companies/${companyId}/issues`,
         {
           params: { limit },
           headers: {

@@ -45,14 +45,17 @@ export const paperclipCommand: Command = {
 
       try {
         // Paperclip API를 호출하여 실제 이슈 생성
-        await PaperclipService.createIssue(title, description);
+        const issue = await PaperclipService.createIssue(title, description);
 
         // 성공 시 응답할 디스코드 임베드 생성
         const embed = new EmbedBuilder()
           .setColor(Colors.SUCCESS)
           .setTitle('✅ 새로운 이슈가 페이퍼클립에 등록되었습니다.')
-          .setDescription(`**${title}**\n\n${description}`)
-          .addFields({ name: '상태', value: 'Backlog', inline: true })
+          .setDescription(`**${issue.title}**\n\n${issue.description}`)
+          .addFields(
+            { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
+            { name: '상태', value: issue.status || 'Backlog', inline: true }
+          )
           .setFooter({ text: 'Paperclip 연동' })
           .setTimestamp();
 

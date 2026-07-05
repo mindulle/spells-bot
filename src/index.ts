@@ -26,6 +26,7 @@ async function main() {
     // Validate required environment variables
     const token = assertEnvVariable('DISCORD_TOKEN');
     assertEnvVariable('DISCORD_CLIENT_ID');
+    assertEnvVariable('PAPERCLIP_API_TOKEN');
 
     // Create Discord client
     const client = new Client({

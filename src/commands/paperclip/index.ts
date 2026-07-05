@@ -64,16 +64,16 @@ export const paperclipCommand: Command = {
       const description = interaction.options.getString('내용') || '상세 내용 없음';
       const companyChoice = interaction.options.getString('회사') || 'mindulle';
 
-      const defaultCompanyId =
-        process.env.PAPERCLIP_COMPANY_ID_MINDULLE || '3fa0dfa2-9f91-4002-8012-ac598bbb4761';
-      const lifeCompanyId =
-        process.env.PAPERCLIP_COMPANY_ID_LIFE || 'bdda2a51-1f01-42fa-a495-ce2a675122d1';
+      const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
+      const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
       const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
 
-      if (!process.env.PAPERCLIP_API_TOKEN) {
+      if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
         await interaction.reply({
           embeds: [
-            createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 누락)'),
+            createErrorEmbed(
+              '현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 또는 회사 ID 누락)'
+            ),
           ],
           ephemeral: true,
         });
@@ -110,16 +110,16 @@ export const paperclipCommand: Command = {
       const limit = interaction.options.getInteger('개수') || 5;
       const companyChoice = interaction.options.getString('회사') || 'mindulle';
 
-      const defaultCompanyId =
-        process.env.PAPERCLIP_COMPANY_ID_MINDULLE || '3fa0dfa2-9f91-4002-8012-ac598bbb4761';
-      const lifeCompanyId =
-        process.env.PAPERCLIP_COMPANY_ID_LIFE || 'bdda2a51-1f01-42fa-a495-ce2a675122d1';
+      const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
+      const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
       const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
 
-      if (!process.env.PAPERCLIP_API_TOKEN) {
+      if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
         await interaction.reply({
           embeds: [
-            createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 누락)'),
+            createErrorEmbed(
+              '현재 페이퍼클립 연동이 비활성화되어 있습니다. (API 토큰 또는 회사 ID 누락)'
+            ),
           ],
           ephemeral: true,
         });

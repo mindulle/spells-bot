@@ -1,9 +1,11 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import dotenv from 'dotenv';
 import { logger } from './utils/logger';
 import { assertEnvVariable } from './utils/error-handler';
 import { registerReadyEvent } from './events/ready';
 import { registerInteractionCreateEvent } from './events/interactionCreate';
+import { registerMessageCreateEvent } from './events/messageCreate';
+import { registerMessageReactionAddEvent } from './events/messageReactionAdd';
 import type { CommandMap } from './types/commands';
 
 // Import commands
@@ -26,7 +28,13 @@ async function main() {
 
     // Create Discord client
     const client = new Client({
-      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessageReactions,
+      ],
+      partials: [Partials.Message, Partials.Reaction, Partials.User],
     });
 
     // Register commands
@@ -43,6 +51,8 @@ async function main() {
     // Register event handlers
     registerReadyEvent(client);
     registerInteractionCreateEvent(client, commands);
+    registerMessageCreateEvent(client);
+    registerMessageReactionAddEvent(client);
 
     // Login to Discord
     await client.login(token);

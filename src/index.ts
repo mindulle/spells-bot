@@ -14,6 +14,7 @@ import { cdnCommand } from './commands/cdn/index';
 import { galleryCommand } from './commands/gallery/index';
 import { playCommand } from './commands/playgrounds/index';
 import { utilsCommand } from './commands/utils/index';
+import { paperclipCommand } from './commands/paperclip/index';
 
 // Load environment variables
 dotenv.config();
@@ -25,6 +26,11 @@ async function main() {
     // Validate required environment variables
     const token = assertEnvVariable('DISCORD_TOKEN');
     assertEnvVariable('DISCORD_CLIENT_ID');
+
+    // Optional environment variables
+    if (!process.env.PAPERCLIP_API_TOKEN) {
+      logger.warn('PAPERCLIP_API_TOKEN is not set. /이슈 command will not work.');
+    }
 
     // Create Discord client
     const client = new Client({
@@ -44,6 +50,7 @@ async function main() {
       [galleryCommand.data.name, galleryCommand],
       [playCommand.data.name, playCommand],
       [utilsCommand.data.name, utilsCommand],
+      [paperclipCommand.data.name, paperclipCommand],
     ]);
 
     logger.info(`Registered ${commands.size} commands`);

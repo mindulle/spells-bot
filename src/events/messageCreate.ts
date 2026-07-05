@@ -1,7 +1,7 @@
 import { Client, Events, Message } from 'discord.js';
 import { logger } from '../utils/logger';
 
-const WEB_CLIP_CHANNEL_ID = '1519250071764336650';
+const WEB_CLIP_CHANNEL_ID = process.env.WEB_CLIP_CHANNEL_ID || '1519250071764336650';
 
 export function registerMessageCreateEvent(client: Client): void {
   client.on(Events.MessageCreate, (message: Message) => {

@@ -8,7 +8,7 @@ import {
 } from 'discord.js';
 import { logger } from '../utils/logger';
 
-const WEB_CLIP_CHANNEL_ID = '1519250071764336650';
+const WEB_CLIP_CHANNEL_ID = process.env.WEB_CLIP_CHANNEL_ID || '1519250071764336650';
 
 export function registerMessageReactionAddEvent(client: Client): void {
   client.on(
@@ -26,23 +26,22 @@ export function registerMessageReactionAddEvent(client: Client): void {
 
         try {
           // If the message is partial, fetch it to get the content
-          if (reaction.message.partial) {
-            await reaction.message.fetch();
-          }
+          const message = reaction.message.partial
+            ? await reaction.message.fetch()
+            : reaction.message;
 
           // Also fetch user if partial
-          if (user.partial) {
-            await user.fetch();
-          }
+          const fullUser = user.partial ? await user.fetch() : user;
 
-          const message = reaction.message;
-          const n8nWebhookUrl =
-            process.env.N8N_WEBHOOK_URL_WEB_CLIP ||
-            'http://100.113.113.72:5678/webhook/discord-web-clip';
+          const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL_WEB_CLIP;
+          if (!n8nWebhookUrl) {
+            logger.error('N8N_WEBHOOK_URL_WEB_CLIP environment variable is not set');
+            return;
+          }
 
           const payload = {
             content: message.content,
-            author: user.username, // Using the user who reacted as the author/clipper
+            author: fullUser.username, // Using the user who reacted as the author/clipper
             channelId: message.channelId,
             messageId: message.id,
           };

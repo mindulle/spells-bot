@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.0](https://github.com/mindulle/spells-bot/compare/v1.4.0...v1.5.0) (2026-07-05)
+
+
+### Features
+
+* Add Paperclip issue creation slash command and service ([def7349](https://github.com/mindulle/spells-bot/commit/def734964083c38126b3c2900beaab6f3bdde12a))
+* Add script to clear duplicate Discord application commands ([8e28f04](https://github.com/mindulle/spells-bot/commit/8e28f04bfc6c1636c800b219c3c22738e9c18662))
+* **discord:** add auto-reaction and n8n webhook routing for web clip channel ([3b79eb0](https://github.com/mindulle/spells-bot/commit/3b79eb0964b4877719da0e9d2e716abfdab25114))
+* **discord:** add auto-reaction and n8n webhook routing for web clip channel ([6c80b38](https://github.com/mindulle/spells-bot/commit/6c80b3870839edfa52ed8be82b62af43774baa13))
+* 페이퍼클립(Paperclip) 제어 슬래시 커맨드 및 API 연동 추가 ([8261593](https://github.com/mindulle/spells-bot/commit/8261593b4d8354f17abe62651199c9ef9899b098))
+
+
+### Bug Fixes
+
+* deploy-commands.ts 스크립트에 paperclipCommand 누락된 문제 해결 ([685fbb9](https://github.com/mindulle/spells-bot/commit/685fbb95995a943e32006d49de7677f9218931be))
+* Include paperclip command in deploy script ([ac5a5b2](https://github.com/mindulle/spells-bot/commit/ac5a5b2845f19930eb0d8d20421f7be0ba3ba29f))
+
 ## [1.4.0](https://github.com/mindulle/spells-bot/compare/v1.3.0...v1.4.0) (2026-07-03)
 
 

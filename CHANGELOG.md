@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.6.0](https://github.com/mindulle/spells-bot/compare/v1.5.0...v1.6.0) (2026-07-06)
+
+
+### Features
+
+* **paperclip:** Support multi-company selection (Mindulle/Life) ([5a1359c](https://github.com/mindulle/spells-bot/commit/5a1359c776172814639ba041f0023b1e3a60b396))
+* **playgrounds:** add /play run command using Piston API ([9e20912](https://github.com/mindulle/spells-bot/commit/9e209122951635cb599f69962d6f256b5f5c1a81))
+* **playgrounds:** add /play run command using Piston API ([94f1cad](https://github.com/mindulle/spells-bot/commit/94f1caded7d0e7063911f558f4043fdd1e926b17))
+* **radio:** add mbc radio streaming voice command ([6c046d4](https://github.com/mindulle/spells-bot/commit/6c046d466b95416ed0dc357d9cbbcf960e4476a6))
+* **radio:** add mbc radio streaming voice command ([49e223a](https://github.com/mindulle/spells-bot/commit/49e223ad23bd5d19c997d20f222d7c8ca9d0ee28))
+* 페이퍼클립 다중 회사(Multi-Company) 선택 기능 추가 ([31508c8](https://github.com/mindulle/spells-bot/commit/31508c8092884103bfdd1c3ecd99298f007ec549))
+* 페이퍼클립 이슈 목록 조회 커맨드 추가 ([2103973](https://github.com/mindulle/spells-bot/commit/2103973cf3cb8681ee07df8d60bd431cfc26d8f9))
+
+
+### Bug Fixes
+
+* **bot:** add GuildVoiceStates intent to allow joining voice channels ([8bf5958](https://github.com/mindulle/spells-bot/commit/8bf595825b1357a723a69c97aa14301a4bf17971))
+* **bot:** add GuildVoiceStates intent to allow joining voice channels ([e8775ce](https://github.com/mindulle/spells-bot/commit/e8775ce866030dd8bed5484acdb879dd4f77f63b))
+* **deploy:** register radio slash command to discord ([8976615](https://github.com/mindulle/spells-bot/commit/897661523c8c9ef8359fd412b615a9aaf00a2432))
+* **docker:** install ffmpeg in alpine image for voice streaming ([38b14d2](https://github.com/mindulle/spells-bot/commit/38b14d2849deccc99d2f2f1de4c6c96574ad5459))
+* **docker:** install ffmpeg in alpine image for voice streaming ([168e862](https://github.com/mindulle/spells-bot/commit/168e86257dc9b3f46bde4bb587a65a63b98edfc2))
+* **docker:** optimize image size by moving ffmpeg-static to devDeps and removing native libsodium ([e0c97ea](https://github.com/mindulle/spells-bot/commit/e0c97ea2bc3aacb670430e9adc730240b49147b2))
+* **paperclip:** Use correct API endpoint with companyId ([94c026e](https://github.com/mindulle/spells-bot/commit/94c026e6b59ec44a4242c1e2771fa01a56e4e289))
+* **playgrounds:** address PR feedback - markdown trim, sanitize backticks, handle 429 rate limit ([3b82d2a](https://github.com/mindulle/spells-bot/commit/3b82d2a2b83a3bbae447422118e44a2a5c544a35))
+* **playgrounds:** apply ai pr reviewer suggestions ([673c57e](https://github.com/mindulle/spells-bot/commit/673c57e6e0bf641ff2f0c43c7f8f1e9e8f31421c))
+* **playgrounds:** switch piston endpoint to internal k8s service ([561d044](https://github.com/mindulle/spells-bot/commit/561d044b0608b8d9b1870d96a2e6a177be77219c))
+* **playgrounds:** switch piston endpoint to internal k8s service ([12af079](https://github.com/mindulle/spells-bot/commit/12af0793fe7779b7cb8958b0d271a2680b290dfa))
+* **playgrounds:** use base url for piston endpoint to handle trailing slashes robustly ([2528c4d](https://github.com/mindulle/spells-bot/commit/2528c4d21c90b217e69a9a7c966cd8bf845bf212))
+* **radio:** apply ai code review suggestions for ffmpeg robustness and startup delay ([cd735eb](https://github.com/mindulle/spells-bot/commit/cd735eb31609222827a331dc2cdc802f6ef9c260))
+* **radio:** manually transcode HLS to OggOpus using spawned ffmpeg ([dfb6777](https://github.com/mindulle/spells-bot/commit/dfb6777db9b8e15d42c378d5cb6e8a8ec7fecd25))
+* **radio:** manually transcode HLS to OggOpus using spawned ffmpeg to prevent silence ([9ffbd1c](https://github.com/mindulle/spells-bot/commit/9ffbd1c00246689c952864d35a7ea575eb039255))
+
 ## [1.5.0](https://github.com/mindulle/spells-bot/compare/v1.4.0...v1.5.0) (2026-07-05)
 
 

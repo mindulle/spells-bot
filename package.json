@@ -27,13 +27,13 @@
   "author": "hotssi",
   "license": "MIT",
   "dependencies": {
+    "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.19.2",
     "axios": "^1.6.2",
     "discord.js": "^14.24.2",
     "dotenv": "^16.3.1",
-    "libsodium-wrappers": "^0.8.4",
     "minio": "^8.0.7",
-    "opusscript": "^0.0.8"
+    "sodium-native": "^5.1.0"
   },
   "devDependencies": {
     "@types/libsodium-wrappers": "^0.7.14",

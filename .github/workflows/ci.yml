@@ -17,6 +17,7 @@ jobs:
           password: ${{ secrets.PAT_TOKEN }}
         ports:
           - 2000:2000
+        options: --privileged --tmpfs /tmp:exec
     steps:
       - uses: actions/checkout@v4
 

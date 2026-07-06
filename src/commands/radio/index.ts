@@ -16,6 +16,8 @@ import {
   VoiceConnection,
   entersState,
 } from '@discordjs/voice';
+import { spawn } from 'child_process';
+import type { ChildProcessWithoutNullStreams } from 'child_process';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
@@ -23,10 +25,10 @@ import { logger } from '../../utils/logger';
 interface RadioSession {
   player: AudioPlayer;
   connection: VoiceConnection;
+  process?: ChildProcessWithoutNullStreams;
 }
 
 // Store the audio player globally so we can stop it later
-// In a production bot for multiple servers, this should be a Map<guildId, AudioPlayer>
 const radioPlayers = new Map<string, RadioSession>();
 
 export const radioCommand: Command = {
@@ -98,6 +100,9 @@ export const radioCommand: Command = {
         const existingSession = radioPlayers.get(guildId);
         if (existingSession) {
           existingSession.player.stop();
+          if (existingSession.process) {
+            existingSession.process.kill();
+          }
           existingSession.connection.destroy();
           radioPlayers.delete(guildId);
         }
@@ -108,26 +113,49 @@ export const radioCommand: Command = {
           adapterCreator: voiceChannel.guild.voiceAdapterCreator,
         });
 
-        // 3. Create Audio Player & Resource
+        // 3. Create Audio Player & Resource with manual FFmpeg transcoding to Opus
+        const ffmpegProcess = spawn('ffmpeg', [
+          '-reconnect',
+          '1',
+          '-reconnect_streamed',
+          '1',
+          '-reconnect_delay_max',
+          '5',
+          '-i',
+          streamUrl,
+          '-analyzeduration',
+          '0',
+          '-loglevel',
+          '0',
+          '-f',
+          'opus',
+          '-ar',
+          '48000',
+          '-ac',
+          '2',
+          'pipe:1',
+        ]);
+
         const player = createAudioPlayer();
-        const resource = createAudioResource(streamUrl, {
-          inputType: StreamType.Arbitrary,
+        const resource = createAudioResource(ffmpegProcess.stdout, {
+          inputType: StreamType.OggOpus,
         });
 
         player.play(resource);
         connection.subscribe(player);
 
-        radioPlayers.set(guildId, { player, connection });
+        radioPlayers.set(guildId, { player, connection, process: ffmpegProcess });
 
         player.on(AudioPlayerStatus.Idle, () => {
           logger.info(`Radio player went idle in guild ${guildId}`);
-          // Auto-reconnect or just leave if stream drops
+          ffmpegProcess.kill();
           connection.destroy();
           radioPlayers.delete(guildId);
         });
 
         player.on('error', (error) => {
           logger.error(`Audio Player Error: ${error.message}`, error);
+          ffmpegProcess.kill();
         });
 
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -144,6 +172,7 @@ export const radioCommand: Command = {
           } catch (error) {
             logger.info(`Failed to reconnect in guild ${guildId}, destroying connection.`);
             player.stop();
+            ffmpegProcess.kill();
             connection.destroy();
             radioPlayers.delete(guildId);
           }
@@ -177,6 +206,9 @@ export const radioCommand: Command = {
 
       if (activeSession) {
         activeSession.player.stop();
+        if (activeSession.process) {
+          activeSession.process.kill();
+        }
         activeSession.connection.destroy();
         radioPlayers.delete(guildId);
 

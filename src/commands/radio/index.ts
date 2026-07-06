@@ -113,7 +113,7 @@ export const radioCommand: Command = {
           adapterCreator: voiceChannel.guild.voiceAdapterCreator,
         });
 
-        // 3. Create Audio Player & Resource with manual FFmpeg transcoding to Opus
+        // 3. Create Audio Player & Resource with manual FFmpeg transcoding to WebM Opus
         const ffmpegProcess = spawn('ffmpeg', [
           '-reconnect',
           '1',
@@ -132,9 +132,9 @@ export const radioCommand: Command = {
           '-b:a',
           '96k',
           '-f',
-          'opus',
-          '-page_duration',
-          '20000',
+          'webm',
+          '-live',
+          '1',
           '-ar',
           '48000',
           '-ac',
@@ -148,7 +148,7 @@ export const radioCommand: Command = {
 
         const player = createAudioPlayer();
         const resource = createAudioResource(ffmpegProcess.stdout, {
-          inputType: StreamType.OggOpus,
+          inputType: StreamType.WebmOpus,
         });
 
         player.play(resource);

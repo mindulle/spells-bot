@@ -33,7 +33,7 @@ const radioPlayers = new Map<string, RadioSession>();
 
 export const radioCommand: Command = {
   data: new SlashCommandBuilder()
-    .setName('testradio')
+    .setName('radio')
     .setDescription('MBC 라디오 스트리밍을 음성 채널에서 재생합니다.')
     .addSubcommand((subcommand) =>
       subcommand

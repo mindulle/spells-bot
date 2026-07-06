@@ -14,6 +14,7 @@ import {
   StreamType,
   AudioPlayer,
   VoiceConnection,
+  entersState,
 } from '@discordjs/voice';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
@@ -67,15 +68,15 @@ export const radioCommand: Command = {
     const member = interaction.member as GuildMember;
     const voiceChannel = member.voice.channel;
 
-    if (!voiceChannel && subcommand === 'play') {
-      await interaction.reply({
-        embeds: [createErrorEmbed('먼저 음성 채널에 접속해 주세요!')],
-        ephemeral: true,
-      });
-      return;
-    }
-
     if (subcommand === 'play') {
+      if (!voiceChannel) {
+        await interaction.reply({
+          embeds: [createErrorEmbed('먼저 음성 채널에 접속해 주세요!')],
+          ephemeral: true,
+        });
+        return;
+      }
+
       const channel = interaction.options.getString('channel', true);
       await interaction.deferReply();
 
@@ -83,7 +84,7 @@ export const radioCommand: Command = {
         // 1. Get MBC Stream URL
         const response = await axios.get<string>(
           `https://sminiplay.imbc.com/aacplay.ashx?agent=webapp&channel=${channel}`,
-          { timeout: 5000 }
+          { timeout: 5000, responseType: 'text' }
         );
 
         const streamUrl = response.data.trim();
@@ -94,10 +95,17 @@ export const radioCommand: Command = {
         logger.info(`Fetched MBC Stream URL: ${streamUrl}`);
 
         // 2. Join Voice Channel
+        const existingSession = radioPlayers.get(guildId);
+        if (existingSession) {
+          existingSession.player.stop();
+          existingSession.connection.destroy();
+          radioPlayers.delete(guildId);
+        }
+
         const connection = joinVoiceChannel({
-          channelId: voiceChannel!.id,
+          channelId: voiceChannel.id,
           guildId: guildId,
-          adapterCreator: voiceChannel!.guild.voiceAdapterCreator,
+          adapterCreator: voiceChannel.guild.voiceAdapterCreator,
         });
 
         // 3. Create Audio Player & Resource
@@ -122,11 +130,23 @@ export const radioCommand: Command = {
           logger.error(`Audio Player Error: ${error.message}`, error);
         });
 
-        connection.on(VoiceConnectionStatus.Disconnected, () => {
-          logger.info(`Bot disconnected from voice channel in guild ${guildId}`);
-          player.stop();
-          connection.destroy();
-          radioPlayers.delete(guildId);
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        connection.on(VoiceConnectionStatus.Disconnected, async () => {
+          logger.info(
+            `Bot disconnected from voice channel in guild ${guildId}. Attempting to reconnect...`
+          );
+          try {
+            await Promise.race([
+              entersState(connection, VoiceConnectionStatus.Signalling, 5000),
+              entersState(connection, VoiceConnectionStatus.Connecting, 5000),
+            ]);
+            logger.info(`Successfully reconnected in guild ${guildId}`);
+          } catch (error) {
+            logger.info(`Failed to reconnect in guild ${guildId}, destroying connection.`);
+            player.stop();
+            connection.destroy();
+            radioPlayers.delete(guildId);
+          }
         });
 
         // 4. Send Success Embed
@@ -137,7 +157,7 @@ export const radioCommand: Command = {
           .setColor(Colors.SUCCESS)
           .setTitle(`📻 ${channelName} 재생 시작`)
           .setDescription(
-            `음성 채널 **${voiceChannel!.name}**에서 라디오 재생을 시작합니다.\n\n🎶 푸른밤, 옥상달빛입니다 등 다양한 라디오를 즐겨보세요!`
+            `음성 채널 **${voiceChannel.name}**에서 라디오 재생을 시작합니다.\n\n🎶 푸른밤, 옥상달빛입니다 등 다양한 라디오를 즐겨보세요!`
           )
           .setTimestamp();
 

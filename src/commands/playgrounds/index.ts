@@ -128,8 +128,11 @@ export const playCommand: Command = {
         const language = interaction.options.getString('language', true);
         let code = interaction.options.getString('code', true);
 
-        // Remove markdown formatting if provided
-        code = code.replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
+        // Remove markdown formatting if provided and trim whitespace
+        code = code
+          .replace(/^```[a-z]*\n/i, '')
+          .replace(/\n```$/i, '')
+          .trim();
 
         await interaction.deferReply();
 
@@ -150,7 +153,8 @@ export const playCommand: Command = {
 
           const data = response.data;
           if (data.run) {
-            const output = data.run.output || 'No output';
+            // Sanitize output to prevent breaking Discord's triple backtick embed
+            const output = data.run.output ? data.run.output.replace(/```/g, "'''") : 'No output';
             const truncatedOutput =
               output.length > 2000 ? output.substring(0, 1997) + '...' : output;
 
@@ -170,10 +174,15 @@ export const playCommand: Command = {
           let errorMsg = '코드 실행에 실패했습니다.';
           if (axios.isAxiosError(_error)) {
             const axiosErr = _error as AxiosError<ErrorResponseData>;
-            errorMsg =
-              axiosErr.response?.data?.error ||
-              axiosErr.response?.data?.message ||
-              axiosErr.message;
+            if (axiosErr.response?.status === 429) {
+              errorMsg =
+                '무료 API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요. (429 Too Many Requests)';
+            } else {
+              errorMsg =
+                axiosErr.response?.data?.error ||
+                axiosErr.response?.data?.message ||
+                axiosErr.message;
+            }
           } else if (_error instanceof Error) {
             errorMsg = _error.message;
           }

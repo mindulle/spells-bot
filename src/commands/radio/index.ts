@@ -111,9 +111,24 @@ export const radioCommand: Command = {
           channelId: voiceChannel.id,
           guildId: guildId,
           adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+          selfDeaf: true,
+          selfMute: false,
         });
 
-        // 3. Create Audio Player & Resource with manual FFmpeg transcoding to Raw PCM
+        // Wait for connection to be ready before playing
+        try {
+          await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+          logger.info(`Voice connection ready for guild ${guildId}`);
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          logger.error(`Voice connection failed to become ready: ${errMsg}`);
+          connection.destroy();
+          throw new Error('음성 채널 연결에 실패했습니다.');
+        }
+
+        // 3. Create Audio Player & Resource with FFmpeg transcoding to Raw PCM
+        // We use Raw PCM (s16le) + inlineVolume to force exact 20ms frame chunking,
+        // which prevents Opus decoding errors and DAVE E2EE silence bugs on the Discord client.
         const ffmpegProcess = spawn('ffmpeg', [
           '-reconnect',
           '1',
@@ -121,12 +136,12 @@ export const radioCommand: Command = {
           '1',
           '-reconnect_delay_max',
           '5',
-          '-analyzeduration',
-          '0',
+          '-err_detect',
+          'ignore_err',
           '-i',
           streamUrl,
           '-loglevel',
-          '0',
+          'warning',
           '-f',
           's16le',
           '-ar',
@@ -136,14 +151,35 @@ export const radioCommand: Command = {
           'pipe:1',
         ]);
 
-        ffmpegProcess.on('error', (error) => {
-          logger.error(`FFmpeg process error in guild ${guildId}: ${error.message}`, error);
+        let ffmpegErrorMsg = '';
+        ffmpegProcess.stderr.on('data', (data: Buffer | string) => {
+          const chunk = data.toString();
+          ffmpegErrorMsg += chunk;
+          if (ffmpegErrorMsg.length > 2000) {
+            ffmpegErrorMsg = ffmpegErrorMsg.slice(-2000);
+          }
+          logger.warn(`FFmpeg: ${chunk.trim()}`);
+        });
+
+        ffmpegProcess.on('close', (code) => {
+          if (code !== 0 && code !== 255) {
+            logger.info(`FFmpeg process closed with code ${code}. Error: ${ffmpegErrorMsg}`);
+          }
         });
 
         const player = createAudioPlayer();
+
+        player.on('stateChange', (oldState, newState) => {
+          logger.info(`Audio player transitioned from ${oldState.status} to ${newState.status}`);
+        });
+
         const resource = createAudioResource(ffmpegProcess.stdout, {
           inputType: StreamType.Raw,
+          inlineVolume: true,
         });
+
+        // Ensure volume is explicitly 100%
+        resource.volume?.setVolume(1.0);
 
         player.play(resource);
         connection.subscribe(player);

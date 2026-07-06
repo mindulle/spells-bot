@@ -137,8 +137,9 @@ export const playCommand: Command = {
         await interaction.deferReply();
 
         try {
+          const pistonApiUrl = process.env.PISTON_API_URL || 'http://piston:2000/api/v2/execute';
           const response = await axios.post<PistonResponse>(
-            'https://emkc.org/api/v2/piston/execute',
+            pistonApiUrl,
             {
               language: language,
               version: '*', // Use the latest available version

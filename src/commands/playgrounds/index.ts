@@ -19,6 +19,19 @@ interface SandboxApiResponse {
   sandbox_id?: string;
 }
 
+interface PistonResponse {
+  language: string;
+  version: string;
+  run?: {
+    output: string;
+    code: number;
+    stdout: string;
+    stderr: string;
+    signal: string;
+  };
+  message?: string;
+}
+
 interface ErrorResponseData {
   error?: string;
   message?: string;
@@ -37,6 +50,20 @@ export const playCommand: Command = {
             .setName('path')
             .setDescription('실행할 예제의 경로 (예: Vanilla/Stateful/Animation/alternating-text)')
             .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('run')
+        .setDescription('코드를 즉시 실행하고 콘솔 결과를 확인합니다 (I Run Code 대체)')
+        .addStringOption((option) =>
+          option
+            .setName('language')
+            .setDescription('실행할 언어 (예: python, javascript, typescript, cpp)')
+            .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option.setName('code').setDescription('실행할 코드 내용').setRequired(true)
         )
     ),
 
@@ -94,6 +121,66 @@ export const playCommand: Command = {
           }
 
           await interaction.editReply({ embeds: [createErrorEmbed(`API 통신 에러: ${errorMsg}`)] });
+        }
+        break;
+      }
+      case 'run': {
+        const language = interaction.options.getString('language', true);
+        let code = interaction.options.getString('code', true);
+
+        // Remove markdown formatting if provided
+        code = code.replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
+
+        await interaction.deferReply();
+
+        try {
+          const response = await axios.post<PistonResponse>(
+            'https://emkc.org/api/v2/piston/execute',
+            {
+              language: language,
+              version: '*', // Use the latest available version
+              files: [
+                {
+                  content: code,
+                },
+              ],
+            },
+            { timeout: 10000 }
+          );
+
+          const data = response.data;
+          if (data.run) {
+            const output = data.run.output || 'No output';
+            const truncatedOutput =
+              output.length > 2000 ? output.substring(0, 1997) + '...' : output;
+
+            const embed = new EmbedBuilder()
+              .setColor(data.run.code === 0 ? Colors.SUCCESS : Colors.ERROR)
+              .setTitle(`🖥️ Code Execution Result (${data.language} ${data.version})`)
+              .setDescription(`\`\`\`\n${truncatedOutput}\n\`\`\``)
+              .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+          } else {
+            throw new Error(data.message || 'Execution failed');
+          }
+        } catch (_error: unknown) {
+          logger.error(`Failed to execute code for ${language}`, _error);
+
+          let errorMsg = '코드 실행에 실패했습니다.';
+          if (axios.isAxiosError(_error)) {
+            const axiosErr = _error as AxiosError<ErrorResponseData>;
+            errorMsg =
+              axiosErr.response?.data?.error ||
+              axiosErr.response?.data?.message ||
+              axiosErr.message;
+          } else if (_error instanceof Error) {
+            errorMsg = _error.message;
+          }
+
+          await interaction.editReply({
+            embeds: [createErrorEmbed(`Piston API 에러: ${errorMsg}`)],
+          });
         }
         break;
       }

@@ -111,7 +111,7 @@ export const radioCommand: Command = {
           channelId: voiceChannel.id,
           guildId: guildId,
           adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-          selfDeaf: true,
+          selfDeaf: false,
           selfMute: false,
         });
 
@@ -119,6 +119,8 @@ export const radioCommand: Command = {
         try {
           await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
           logger.info(`Voice connection ready for guild ${guildId}`);
+          // Wait an additional 2 seconds to ensure DAVE E2EE handshake completes
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (error) {
           const errMsg = error instanceof Error ? error.message : String(error);
           logger.error(`Voice connection failed to become ready: ${errMsg}`);

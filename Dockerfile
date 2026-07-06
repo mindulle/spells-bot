@@ -20,8 +20,8 @@ RUN npm run build
 # Production stage
 FROM node:20-alpine
 
-# Install ffmpeg and libsodium for audio streaming
-RUN apk add --no-cache ffmpeg libsodium
+# Install ffmpeg for audio streaming (libsodium handled via wasm)
+RUN apk add --no-cache ffmpeg
 
 WORKDIR /app
 

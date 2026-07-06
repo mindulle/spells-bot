@@ -130,6 +130,7 @@ export const radioCommand: Command = {
         // We use Raw PCM (s16le) + inlineVolume to force exact 20ms frame chunking,
         // which prevents Opus decoding errors and DAVE E2EE silence bugs on the Discord client.
         const ffmpegProcess = spawn('ffmpeg', [
+          '-re',
           '-reconnect',
           '1',
           '-reconnect_streamed',

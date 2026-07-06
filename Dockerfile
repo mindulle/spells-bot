@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y python3 build-essential && rm -rf /var/
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --ignore-scripts
+# Install dependencies (HUSKY=0 prevents husky from installing hooks)
+RUN HUSKY=0 npm ci
 
 # Copy source code
 COPY src ./src
@@ -19,6 +19,9 @@ COPY scripts ./scripts
 
 # Build TypeScript
 RUN npm run build
+
+# Remove devDependencies
+RUN HUSKY=0 npm prune --omit=dev
 
 # Production stage
 FROM node:20-bullseye-slim
@@ -31,14 +34,9 @@ RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-
-# Copy built files from builder
+# Copy built files and pruned node_modules from builder
 COPY --from=builder /app/dist ./dist
-# Also copy native modules built in builder
-COPY --from=builder /app/node_modules/@discordjs/opus ./node_modules/@discordjs/opus
-COPY --from=builder /app/node_modules/sodium-native ./node_modules/sodium-native
+COPY --from=builder /app/node_modules ./node_modules
 
 # Create non-root user for security
 RUN groupadd -g 1001 nodejs && \

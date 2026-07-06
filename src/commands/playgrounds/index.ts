@@ -137,7 +137,9 @@ export const playCommand: Command = {
         await interaction.deferReply();
 
         try {
-          const pistonApiUrl = process.env.PISTON_API_URL || 'http://piston:2000/api/v2/execute';
+          const pistonBaseUrl = process.env.PISTON_API_URL || 'http://piston:2000';
+          const pistonApiUrl = `${pistonBaseUrl.replace(/\/$/, '')}/api/v2/execute`;
+
           const response = await axios.post<PistonResponse>(
             pistonApiUrl,
             {

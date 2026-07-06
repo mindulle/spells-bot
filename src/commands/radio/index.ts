@@ -133,6 +133,8 @@ export const radioCommand: Command = {
           '96k',
           '-f',
           'webm',
+          '-live',
+          '1',
           '-ar',
           '48000',
           '-ac',

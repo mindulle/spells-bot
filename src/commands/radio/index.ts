@@ -127,6 +127,8 @@ export const radioCommand: Command = {
           streamUrl,
           '-loglevel',
           '0',
+          '-c:a',
+          'libopus',
           '-f',
           'opus',
           '-ar',

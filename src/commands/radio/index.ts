@@ -33,7 +33,7 @@ const radioPlayers = new Map<string, RadioSession>();
 
 export const radioCommand: Command = {
   data: new SlashCommandBuilder()
-    .setName('testradio')
+    .setName('radio')
     .setDescription('MBC 라디오 스트리밍을 음성 채널에서 재생합니다.')
     .addSubcommand((subcommand) =>
       subcommand
@@ -111,7 +111,7 @@ export const radioCommand: Command = {
           channelId: voiceChannel.id,
           guildId: guildId,
           adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-          selfDeaf: false,
+          selfDeaf: true,
           selfMute: false,
         });
 
@@ -155,6 +155,9 @@ export const radioCommand: Command = {
         ffmpegProcess.stderr.on('data', (data: Buffer | string) => {
           const chunk = data.toString();
           ffmpegErrorMsg += chunk;
+          if (ffmpegErrorMsg.length > 2000) {
+            ffmpegErrorMsg = ffmpegErrorMsg.slice(-2000);
+          }
           logger.warn(`FFmpeg: ${chunk.trim()}`);
         });
 
@@ -181,16 +184,18 @@ export const radioCommand: Command = {
         player.play(resource);
         connection.subscribe(player);
 
-        radioPlayers.set(guildId, { player, connection });
+        radioPlayers.set(guildId, { player, connection, process: ffmpegProcess });
 
         player.on(AudioPlayerStatus.Idle, () => {
           logger.info(`Radio player went idle in guild ${guildId}`);
+          ffmpegProcess.kill();
           connection.destroy();
           radioPlayers.delete(guildId);
         });
 
         player.on('error', (error) => {
           logger.error(`Audio Player Error: ${error.message}`, error);
+          ffmpegProcess.kill();
         });
 
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -207,6 +212,7 @@ export const radioCommand: Command = {
           } catch (error) {
             logger.info(`Failed to reconnect in guild ${guildId}, destroying connection.`);
             player.stop();
+            ffmpegProcess.kill();
             connection.destroy();
             radioPlayers.delete(guildId);
           }

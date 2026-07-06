@@ -9,6 +9,14 @@ on:
 jobs:
   build-and-lint:
     runs-on: ubuntu-latest
+    services:
+      piston:
+        image: ghcr.io/mindulle/piston:latest
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_TOKEN }}
+        ports:
+          - 2000:2000
     steps:
       - uses: actions/checkout@v4
 

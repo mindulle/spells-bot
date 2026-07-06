@@ -121,10 +121,10 @@ export const radioCommand: Command = {
           '1',
           '-reconnect_delay_max',
           '5',
-          '-i',
-          streamUrl,
           '-analyzeduration',
           '0',
+          '-i',
+          streamUrl,
           '-loglevel',
           '0',
           '-f',
@@ -135,6 +135,10 @@ export const radioCommand: Command = {
           '2',
           'pipe:1',
         ]);
+
+        ffmpegProcess.on('error', (error) => {
+          logger.error(`FFmpeg process error in guild ${guildId}: ${error.message}`, error);
+        });
 
         const player = createAudioPlayer();
         const resource = createAudioResource(ffmpegProcess.stdout, {

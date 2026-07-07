@@ -6,8 +6,11 @@ import {
   ActionRowBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  ComponentType,
   ButtonBuilder,
   ButtonStyle,
+  Message,
+  ButtonInteraction,
 } from 'discord.js';
 import axios from 'axios';
 import Parser from 'rss-parser';
@@ -26,6 +29,65 @@ interface ITunesResult {
 }
 
 const rssParser = new Parser();
+
+// Helper to add player controls
+function getPlayerControlRow() {
+  const pauseBtn = new ButtonBuilder()
+    .setCustomId('radio_control_pause')
+    .setLabel('일시정지')
+    .setStyle(ButtonStyle.Secondary)
+    .setEmoji('⏸️');
+  const resumeBtn = new ButtonBuilder()
+    .setCustomId('radio_control_resume')
+    .setLabel('재생')
+    .setStyle(ButtonStyle.Primary)
+    .setEmoji('▶️');
+  const stopBtn = new ButtonBuilder()
+    .setCustomId('radio_control_stop')
+    .setLabel('종료')
+    .setStyle(ButtonStyle.Danger)
+    .setEmoji('⏹️');
+
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(pauseBtn, resumeBtn, stopBtn);
+}
+
+function attachPlayerControlsCollector(message: Message, guildId: string, userId: string) {
+  const collector = message.createMessageComponentCollector({
+    componentType: ComponentType.Button,
+    time: 12 * 60 * 60 * 1000, // 12 hours
+  });
+
+  collector.on('collect', (i: ButtonInteraction) => {
+    void (async () => {
+      if (i.user.id !== userId) {
+        await i.reply({ content: '명령어를 입력한 사용자만 조작할 수 있습니다.', ephemeral: true });
+        return;
+      }
+
+      const currentQueue = player.nodes.get(guildId);
+      if (!currentQueue) {
+        await i.reply({ content: '현재 재생 중인 라디오가 없습니다.', ephemeral: true });
+        return;
+      }
+
+      try {
+        if (i.customId === 'radio_control_pause') {
+          currentQueue.node.setPaused(true);
+          await i.reply({ content: '⏸️ 라디오를 일시정지했습니다.', ephemeral: true });
+        } else if (i.customId === 'radio_control_resume') {
+          currentQueue.node.setPaused(false);
+          await i.reply({ content: '▶️ 라디오 재생을 계속합니다.', ephemeral: true });
+        } else if (i.customId === 'radio_control_stop') {
+          currentQueue.delete();
+          await i.reply({ content: '⏹️ 라디오 재생을 종료합니다.', ephemeral: true });
+        }
+      } catch (err) {
+        logger.error('Failed to handle player control', err);
+        await i.reply({ content: '조작 중 오류가 발생했습니다.', ephemeral: true });
+      }
+    })();
+  });
+}
 
 export const radioCommand: Command = {
   data: new SlashCommandBuilder()
@@ -161,7 +223,11 @@ export const radioCommand: Command = {
           .setColor(Colors.SUCCESS)
           .setTitle(`📻 ${channelName} 재생 시작`)
           .setDescription(`음성 채널 **${voiceChannel.name}**에서 실시간 라디오를 재생합니다.`);
-        await interaction.editReply({ embeds: [embed] });
+        const msg = await interaction.editReply({
+          embeds: [embed],
+          components: [getPlayerControlRow()],
+        });
+        attachPlayerControlsCollector(msg, guildId, interaction.user.id);
       } catch (error: unknown) {
         logger.error('Failed to play radio', error);
         await interaction.editReply({
@@ -336,7 +402,11 @@ export const radioCommand: Command = {
                   )
                   .setThumbnail(artworkUrl || null);
 
-                await i.editReply({ embeds: [playEmbed], components: [] });
+                const msg = await i.editReply({
+                  embeds: [playEmbed],
+                  components: [getPlayerControlRow()],
+                });
+                attachPlayerControlsCollector(msg, guildId, interaction.user.id);
               } catch (err) {
                 logger.error('Failed to play VOD', err);
                 await i.editReply({
@@ -426,7 +496,11 @@ export const radioCommand: Command = {
             )
             .setThumbnail(songTrack.thumbnail || null);
 
-          await interaction.editReply({ embeds: [embed] });
+          const msg = await interaction.editReply({
+            embeds: [embed],
+            components: [getPlayerControlRow()],
+          });
+          attachPlayerControlsCollector(msg, guildId, interaction.user.id);
         } else {
           await interaction.editReply({
             content: '현재 트랙 정보를 찾을 수 없어 끼어들기를 할 수 없습니다.',

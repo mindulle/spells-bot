@@ -202,7 +202,7 @@ export const radioCommand: Command = {
 
         // 2. Parse RSS Feed
         const feed = await rssParser.parseURL(feedUrl);
-        const episodes = feed.items.slice(0, 10); // Get latest 10 episodes
+        const episodes = feed.items.slice(0, 25); // Get latest 25 episodes
 
         if (episodes.length === 0) {
           await interaction.editReply({
@@ -226,7 +226,7 @@ export const radioCommand: Command = {
               .setValue(value.length > 100 ? value.substring(0, 100) : value); // Discord limitation
           })
           .filter((opt) => opt.data.value && opt.data.value.startsWith('http'))
-          .slice(0, 10);
+          .slice(0, 25);
 
         if (selectOptions.length === 0) {
           await interaction.editReply({

@@ -53,6 +53,17 @@ async function main() {
     player = new Player(client);
     await player.extractors.loadMulti(DefaultExtractors);
 
+    // Global player event to handle VOD resuming
+    player.events.on('playerStart', (queue: any, track: any) => {
+      if (track.resumeFrom) {
+        logger.info(`Resuming track ${track.title} from ${track.resumeFrom}ms`);
+        // Use a slight timeout to ensure the track has actually started decoding before seeking
+        setTimeout(() => {
+          queue.node.seek(track.resumeFrom);
+        }, 500);
+      }
+    });
+
     // Register commands
     const commands: CommandMap = new Map([
       [infraCommand.data.name, infraCommand],

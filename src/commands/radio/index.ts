@@ -364,7 +364,8 @@ export const radioCommand: Command = {
             url: currentTrack.url,
             source: currentTrack.source as 'arbitrary',
             engine: String(
-              (currentTrack.raw as Record<string, unknown>).engine || currentTrack.url
+              (currentTrack.raw as Record<string, unknown> | null | undefined)?.engine ||
+                currentTrack.url
             ),
             thumbnail: currentTrack.thumbnail,
             duration: currentTrack.duration,

@@ -81,6 +81,8 @@ function attachPlayerControlsCollector(message: Message, guildId: string, userId
           await i.followUp({ content: '▶️ 라디오 재생을 계속합니다.', ephemeral: true });
         } else if (i.customId === 'radio_control_stop') {
           currentQueue.delete();
+          await i.editReply({ components: [] }).catch(() => {});
+          collector.stop();
           await i.followUp({ content: '⏹️ 라디오 재생을 종료합니다.', ephemeral: true });
         }
       } catch (err) {
@@ -90,6 +92,10 @@ function attachPlayerControlsCollector(message: Message, guildId: string, userId
           .catch(() => {});
       }
     })();
+  });
+
+  collector.on('end', () => {
+    void message.edit({ components: [] }).catch(() => {});
   });
 }
 

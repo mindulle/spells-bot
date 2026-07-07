@@ -20,6 +20,8 @@ import { radioCommand } from './commands/radio/index';
 // Load environment variables
 dotenv.config();
 
+export let player: any;
+
 async function main() {
   try {
     logger.info('Starting Spells Bot...');
@@ -44,6 +46,12 @@ async function main() {
       ],
       partials: [Partials.Message, Partials.Reaction, Partials.User],
     });
+
+    // Initialize discord-player dynamically to avoid top-level require issues
+    const { Player } = await import('discord-player');
+    const { DefaultExtractors } = await import('@discord-player/extractor');
+    player = new Player(client);
+    await player.extractors.loadMulti(DefaultExtractors);
 
     // Register commands
     const commands: CommandMap = new Map([

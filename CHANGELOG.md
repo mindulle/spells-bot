@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.6.1](https://github.com/mindulle/spells-bot/compare/v1.6.0...v1.6.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **docker:** allow native modules to compile by removing ignore-scripts and optimize multi-stage build ([c9748ba](https://github.com/mindulle/spells-bot/commit/c9748bab04ea75aa7d5b6e3d583490aca8a55fcf))
+* **radio:** add -live 1 flag to optimize WebM muxer for live streaming pipe ([eacd279](https://github.com/mindulle/spells-bot/commit/eacd27940854fb24072b2f2959dcdeb7fe89151f))
+* **radio:** add -re flag to ffmpeg and upgrade docker base to bookworm ([f630f50](https://github.com/mindulle/spells-bot/commit/f630f50b75b24c95e7f75d430713021621350f22))
+* **radio:** add -re flag to ffmpeg and upgrade docker base to bookworm ([1dac8e9](https://github.com/mindulle/spells-bot/commit/1dac8e9173780d8b1fbe8525b5de9b86b5d08f04))
+* **radio:** add reconnect_at_eof and reconnect_on_network_error flags based on PR review ([07863e8](https://github.com/mindulle/spells-bot/commit/07863e8e2deb05870b830030993ae3ae5104e24a))
+* **radio:** address PR code review feedback ([df47d3d](https://github.com/mindulle/spells-bot/commit/df47d3df0f4f311c3512c24511619adbccbff3c7))
+* **radio:** disable selfDeaf and add 2s delay for DAVE E2EE handshake ([c8c29d7](https://github.com/mindulle/spells-bot/commit/c8c29d736e468cdd581cca19a66d7c9aeab3ae2f))
+* **radio:** disable selfDeaf and add 2s delay for DAVE E2EE handshake ([73e6b5e](https://github.com/mindulle/spells-bot/commit/73e6b5ea7368acf5113b7b7555e9716069a6631d))
+* **radio:** fallback to StreamType.Raw and opusscript ([d36af80](https://github.com/mindulle/spells-bot/commit/d36af8056718d1111aaaadf7644feef8ba034bfc))
+* **radio:** fallback to StreamType.Raw and opusscript due to extreme instability of djs voice demuxers ([4c00058](https://github.com/mindulle/spells-bot/commit/4c0005847f27a7b1f2ce40a04daaacab842252ed))
+* **radio:** remove -re flag to prevent audio player starvation ([7068beb](https://github.com/mindulle/spells-bot/commit/7068bebfd4c65e14b5bc5bfd3fe57bd1a2cb6d2b))
+* **radio:** remove -re flag to prevent player starvation ([7df192c](https://github.com/mindulle/spells-bot/commit/7df192ca7832ef89e7818f1f04047f4e0629a27f))
+* **radio:** revert command name from testradio back to radio ([6dc42d0](https://github.com/mindulle/spells-bot/commit/6dc42d0f0f3738a741840ffe2702858c3b02eb54))
+* **radio:** set ffmpeg ogg page_duration to 20ms to fix discord voice silence ([0c6916c](https://github.com/mindulle/spells-bot/commit/0c6916c1e280b72161a1a4facb35581ddc3a492a))
+* **radio:** set ffmpeg ogg page_duration to 20ms to fix discord voice silence ([3b0df0b](https://github.com/mindulle/spells-bot/commit/3b0df0b70444ec0507c67de775f86eb7579eeedd))
+* **radio:** switch docker base to debian and use native discordjs/opus ([1e20416](https://github.com/mindulle/spells-bot/commit/1e204165b02503e53dbc9ddc7efdfcf55dedc558))
+* **radio:** switch docker base to debian and use native discordjs/opus for stable streaming ([eff9c9f](https://github.com/mindulle/spells-bot/commit/eff9c9fdeecbf1cd645eb1c853cfde33bfeb9253))
+* **radio:** switch from Ogg to WebmOpus to resolve discord.js voice demuxing bugs ([64c0e50](https://github.com/mindulle/spells-bot/commit/64c0e50f6d153043a20f307ef4158e10ae2d6dd0))
+* **radio:** switch from Ogg to WebmOpus to resolve discord.js voice demuxing bugs ([fab531a](https://github.com/mindulle/spells-bot/commit/fab531adda6a0426aef3c1804688e5952d179367))
+* **radio:** switch to opusscript and raw PCM stream to resolve silence issue ([0af8d0b](https://github.com/mindulle/spells-bot/commit/0af8d0be58781e9958343843fad1148b62a82abf))
+* **radio:** switch to opusscript and raw PCM stream to resolve silence issue ([f750d0d](https://github.com/mindulle/spells-bot/commit/f750d0d00e810b761bb5fcb44eebee3f8604889b))
+* **radio:** switch to robust s16le chunking to fix discord.js/voice silence issue ([80eb0ae](https://github.com/mindulle/spells-bot/commit/80eb0ae7f5ca7a6487c93d6263bcf9244b50b7b6))
+* **radio:** switch to robust s16le chunking to fix silence issue ([0219212](https://github.com/mindulle/spells-bot/commit/0219212fb47997eba1890b54bc947630b109666d))
+
 ## [1.6.0](https://github.com/mindulle/spells-bot/compare/v1.5.0...v1.6.0) (2026-07-06)
 
 

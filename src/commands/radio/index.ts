@@ -145,6 +145,7 @@ export const radioCommand: Command = {
           author: 'MBC',
           url: streamUrl,
           source: 'arbitrary',
+          engine: streamUrl, // Required by AttachmentExtractor
           thumbnail: 'https://i.imgur.com/8QGZ2u1.png',
           duration: '0:00',
           views: 0,
@@ -283,6 +284,7 @@ export const radioCommand: Command = {
                 author: podcastName,
                 url: episode?.enclosure?.url || selectedUrl,
                 source: 'arbitrary',
+                engine: episode?.enclosure?.url || selectedUrl, // Required by AttachmentExtractor
                 thumbnail: artworkUrl || 'https://i.imgur.com/8QGZ2u1.png',
                 duration: '0:00',
                 views: 0,
@@ -361,6 +363,10 @@ export const radioCommand: Command = {
             author: currentTrack.author,
             url: currentTrack.url,
             source: currentTrack.source as 'arbitrary',
+            engine: String(
+              (currentTrack.raw as Record<string, unknown> | null | undefined)?.engine ||
+                currentTrack.url
+            ),
             thumbnail: currentTrack.thumbnail,
             duration: currentTrack.duration,
             views: currentTrack.views,

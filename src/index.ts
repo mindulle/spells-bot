@@ -17,8 +17,12 @@ import { utilsCommand } from './commands/utils/index';
 import { paperclipCommand } from './commands/paperclip/index';
 import { radioCommand } from './commands/radio/index';
 
+import { Player } from 'discord-player';
+
 // Load environment variables
 dotenv.config();
+
+export let player: Player;
 
 async function main() {
   try {
@@ -43,6 +47,24 @@ async function main() {
         GatewayIntentBits.GuildMessageReactions,
       ],
       partials: [Partials.Message, Partials.Reaction, Partials.User],
+    });
+
+    const { DefaultExtractors } = await import('@discord-player/extractor');
+    player = new Player(client);
+    await player.extractors.loadMulti(DefaultExtractors);
+
+    // Global player event to handle VOD resuming
+    player.events.on('playerStart', (queue, track) => {
+      // Use metadata to extract resumeFrom
+      const metadata = track.metadata as Record<string, unknown> | null;
+      const resumeFrom = metadata?.resumeFrom;
+      if (typeof resumeFrom === 'number') {
+        logger.info(`Resuming track ${track.title} from ${resumeFrom}ms`);
+        // Use a slight timeout to ensure the track has actually started decoding before seeking
+        setTimeout(() => {
+          queue.node.seek(resumeFrom).catch((err) => logger.error('Failed to seek', err));
+        }, 500);
+      }
     });
 
     // Register commands

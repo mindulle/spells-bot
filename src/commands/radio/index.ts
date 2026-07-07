@@ -3,42 +3,37 @@ import {
   SlashCommandBuilder,
   EmbedBuilder,
   GuildMember,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+  ComponentType,
 } from 'discord.js';
 import axios from 'axios';
-import {
-  joinVoiceChannel,
-  createAudioPlayer,
-  createAudioResource,
-  AudioPlayerStatus,
-  VoiceConnectionStatus,
-  StreamType,
-  AudioPlayer,
-  VoiceConnection,
-  entersState,
-} from '@discordjs/voice';
-import { spawn } from 'child_process';
-import type { ChildProcessWithoutNullStreams } from 'child_process';
+import Parser from 'rss-parser';
+import { Track } from 'discord-player';
+import { player } from '../../index';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
 
-interface RadioSession {
-  player: AudioPlayer;
-  connection: VoiceConnection;
-  process?: ChildProcessWithoutNullStreams;
+// Interfaces for API responses
+interface ITunesResult {
+  feedUrl?: string;
+  collectionName?: string;
+  artworkUrl600?: string;
+  artworkUrl100?: string;
 }
 
-// Store the audio player globally so we can stop it later
-const radioPlayers = new Map<string, RadioSession>();
+const rssParser = new Parser();
 
 export const radioCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('radio')
-    .setDescription('MBC 라디오 스트리밍을 음성 채널에서 재생합니다.')
+    .setDescription('MBC 라디오 및 팟캐스트(다시듣기)를 관리합니다.')
     .addSubcommand((subcommand) =>
       subcommand
         .setName('play')
-        .setDescription('라디오 재생을 시작합니다.')
+        .setDescription('실시간 라디오 재생을 시작합니다.')
         .addStringOption((option) =>
           option
             .setName('channel')
@@ -52,7 +47,29 @@ export const radioCommand: Command = {
         )
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName('stop').setDescription('라디오 재생을 중지하고 음성 채널에서 나갑니다.')
+      subcommand
+        .setName('vod')
+        .setDescription('팟캐스트(다시듣기) 에피소드를 검색하고 재생합니다.')
+        .addStringOption((option) =>
+          option
+            .setName('query')
+            .setDescription('검색할 프로그램명 (예: 푸른밤, 배철수)')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('song')
+        .setDescription('다시듣기 도중 원곡을 검색해서 끼어들기(새치기) 재생합니다.')
+        .addStringOption((option) =>
+          option
+            .setName('title')
+            .setDescription('재생할 원곡의 제목 (가수 + 제목)')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName('stop').setDescription('재생을 중지하고 음성 채널에서 나갑니다.')
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -70,20 +87,43 @@ export const radioCommand: Command = {
     const member = interaction.member as GuildMember;
     const voiceChannel = member.voice.channel;
 
-    if (subcommand === 'play') {
-      if (!voiceChannel) {
+    // --- STOP ---
+    if (subcommand === 'stop') {
+      const queue = player.nodes.get(guildId);
+      if (queue && queue.isPlaying()) {
+        queue.delete();
+        const embed = new EmbedBuilder()
+          .setColor(Colors.SUCCESS)
+          .setTitle('📻 라디오 종료')
+          .setDescription('재생을 중지하고 음성 채널에서 나갔습니다.');
+        await interaction.reply({ embeds: [embed] });
+      } else {
         await interaction.reply({
-          embeds: [createErrorEmbed('먼저 음성 채널에 접속해 주세요!')],
+          embeds: [createErrorEmbed('현재 재생 중인 라디오가 없습니다.')],
           ephemeral: true,
         });
-        return;
       }
+      return;
+    }
 
+    // Must be in a voice channel for the other commands
+    if (!voiceChannel) {
+      await interaction.reply({
+        embeds: [createErrorEmbed('먼저 음성 채널에 접속해 주세요!')],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // --- PLAY (LIVE) ---
+    if (subcommand === 'play') {
       const channel = interaction.options.getString('channel', true);
       await interaction.deferReply();
 
       try {
-        // 1. Get MBC Stream URL
+        const existingQueue = player.nodes.get(guildId);
+        if (existingQueue && existingQueue.isPlaying()) existingQueue.delete();
+
         const response = await axios.get<string>(
           `https://sminiplay.imbc.com/aacplay.ashx?agent=webapp&channel=${channel}`,
           { timeout: 5000, responseType: 'text' }
@@ -94,181 +134,267 @@ export const radioCommand: Command = {
           throw new Error('유효한 스트리밍 주소를 가져오지 못했습니다.');
         }
 
-        logger.info(`Fetched MBC Stream URL: ${streamUrl}`);
-
-        // 2. Join Voice Channel
-        const existingSession = radioPlayers.get(guildId);
-        if (existingSession) {
-          existingSession.player.stop();
-          if (existingSession.process) {
-            existingSession.process.kill();
-          }
-          existingSession.connection.destroy();
-          radioPlayers.delete(guildId);
-        }
-
-        const connection = joinVoiceChannel({
-          channelId: voiceChannel.id,
-          guildId: guildId,
-          adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-          selfDeaf: false,
-          selfMute: false,
-        });
-
-        // Wait for connection to be ready before playing
-        try {
-          await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
-          logger.info(`Voice connection ready for guild ${guildId}`);
-          // Wait an additional 2 seconds to ensure DAVE E2EE handshake completes
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-        } catch (error) {
-          const errMsg = error instanceof Error ? error.message : String(error);
-          logger.error(`Voice connection failed to become ready: ${errMsg}`);
-          connection.destroy();
-          throw new Error('음성 채널 연결에 실패했습니다.');
-        }
-
-        // 3. Create Audio Player & Resource with FFmpeg transcoding to Raw PCM
-        // We use Raw PCM (s16le) + inlineVolume to force exact 20ms frame chunking,
-        // which prevents Opus decoding errors and DAVE E2EE silence bugs on the Discord client.
-        const ffmpegProcess = spawn('ffmpeg', [
-          '-reconnect',
-          '1',
-          '-reconnect_at_eof',
-          '1',
-          '-reconnect_on_network_error',
-          '1',
-          '-reconnect_streamed',
-          '1',
-          '-reconnect_delay_max',
-          '5',
-          '-err_detect',
-          'ignore_err',
-          '-i',
-          streamUrl,
-          '-loglevel',
-          'warning',
-          '-f',
-          's16le',
-          '-ar',
-          '48000',
-          '-ac',
-          '2',
-          'pipe:1',
-        ]);
-
-        let ffmpegErrorMsg = '';
-        ffmpegProcess.stderr.on('data', (data: Buffer | string) => {
-          const chunk = data.toString();
-          ffmpegErrorMsg += chunk;
-          if (ffmpegErrorMsg.length > 2000) {
-            ffmpegErrorMsg = ffmpegErrorMsg.slice(-2000);
-          }
-          logger.warn(`FFmpeg: ${chunk.trim()}`);
-        });
-
-        ffmpegProcess.on('close', (code) => {
-          if (code !== 0 && code !== 255) {
-            logger.info(`FFmpeg process closed with code ${code}. Error: ${ffmpegErrorMsg}`);
-          }
-        });
-
-        const player = createAudioPlayer();
-
-        player.on('stateChange', (oldState, newState) => {
-          logger.info(`Audio player transitioned from ${oldState.status} to ${newState.status}`);
-        });
-
-        const resource = createAudioResource(ffmpegProcess.stdout, {
-          inputType: StreamType.Raw,
-          inlineVolume: true,
-        });
-
-        // Ensure volume is explicitly 100%
-        resource.volume?.setVolume(1.0);
-
-        player.play(resource);
-        connection.subscribe(player);
-
-        radioPlayers.set(guildId, { player, connection, process: ffmpegProcess });
-
-        player.on(AudioPlayerStatus.Idle, () => {
-          logger.info(`Radio player went idle in guild ${guildId}`);
-          ffmpegProcess.kill();
-          connection.destroy();
-          radioPlayers.delete(guildId);
-        });
-
-        player.on('error', (error) => {
-          logger.error(`Audio Player Error: ${error.message}`, error);
-          ffmpegProcess.kill();
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        connection.on(VoiceConnectionStatus.Disconnected, async () => {
-          logger.info(
-            `Bot disconnected from voice channel in guild ${guildId}. Attempting to reconnect...`
-          );
-          try {
-            await Promise.race([
-              entersState(connection, VoiceConnectionStatus.Signalling, 5000),
-              entersState(connection, VoiceConnectionStatus.Connecting, 5000),
-            ]);
-            logger.info(`Successfully reconnected in guild ${guildId}`);
-          } catch (error) {
-            logger.info(`Failed to reconnect in guild ${guildId}, destroying connection.`);
-            player.stop();
-            ffmpegProcess.kill();
-            connection.destroy();
-            radioPlayers.delete(guildId);
-          }
-        });
-
-        // 4. Send Success Embed
         const channelName =
           channel === 'mfm' ? 'MBC FM4U' : channel === 'sfm' ? 'MBC 표준FM' : 'MBC 올댓뮤직';
+
+        logger.info(`Playing ${channelName} stream via discord-player: ${streamUrl}`);
+
+        const track = new Track(player, {
+          title: channelName,
+          description: 'MBC Live Radio',
+          author: 'MBC',
+          url: streamUrl,
+          source: 'arbitrary',
+          thumbnail: 'https://i.imgur.com/8QGZ2u1.png',
+          duration: '0:00',
+          views: 0,
+          requestedBy: interaction.user,
+        });
+
+        await player.play(voiceChannel, track, {
+          nodeOptions: { metadata: interaction, selfDeaf: false, leaveOnEmpty: true },
+        });
 
         const embed = new EmbedBuilder()
           .setColor(Colors.SUCCESS)
           .setTitle(`📻 ${channelName} 재생 시작`)
-          .setDescription(
-            `음성 채널 **${voiceChannel.name}**에서 라디오 재생을 시작합니다.\n\n🎶 푸른밤, 옥상달빛입니다 등 다양한 라디오를 즐겨보세요!`
-          )
-          .setTimestamp();
-
+          .setDescription(`음성 채널 **${voiceChannel.name}**에서 실시간 라디오를 재생합니다.`);
         await interaction.editReply({ embeds: [embed] });
       } catch (error: unknown) {
         logger.error('Failed to play radio', error);
-        let errorMsg = '알 수 없는 오류가 발생했습니다.';
-        if (error instanceof Error) {
-          errorMsg = error.message;
-        }
         await interaction.editReply({
-          embeds: [createErrorEmbed(`라디오 스트리밍을 시작하지 못했습니다: ${errorMsg}`)],
+          embeds: [
+            createErrorEmbed(
+              `라디오 재생 실패: ${error instanceof Error ? error.message : '알 수 없는 에러'}`
+            ),
+          ],
         });
       }
-    } else if (subcommand === 'stop') {
-      const activeSession = radioPlayers.get(guildId);
+    }
 
-      if (activeSession) {
-        activeSession.player.stop();
-        if (activeSession.process) {
-          activeSession.process.kill();
+    // --- VOD (PODCAST) ---
+    if (subcommand === 'vod') {
+      const query = interaction.options.getString('query', true);
+      await interaction.deferReply();
+
+      try {
+        // 1. Search iTunes for the podcast
+        const searchRes = await axios.get<{ results: ITunesResult[] }>(
+          `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=podcast&limit=3`
+        );
+        const results = searchRes.data.results;
+
+        if (!results || results.length === 0) {
+          await interaction.editReply({
+            embeds: [createErrorEmbed(`'${query}'에 해당하는 팟캐스트를 찾을 수 없습니다.`)],
+          });
+          return;
         }
-        activeSession.connection.destroy();
-        radioPlayers.delete(guildId);
+
+        const feedUrl = results[0].feedUrl;
+        const podcastName = results[0].collectionName;
+        const artworkUrl = results[0].artworkUrl600 || results[0].artworkUrl100;
+
+        if (!feedUrl || !podcastName) {
+          throw new Error('팟캐스트 메타데이터가 부족합니다.');
+        }
+
+        // 2. Parse RSS Feed
+        const feed = await rssParser.parseURL(feedUrl);
+        const episodes = feed.items.slice(0, 10); // Get latest 10 episodes
+
+        if (episodes.length === 0) {
+          await interaction.editReply({
+            embeds: [createErrorEmbed('이 팟캐스트에 등록된 에피소드가 없습니다.')],
+          });
+          return;
+        }
+
+        // 3. Create Select Menu
+        const selectOptions = episodes
+          .map((ep, index) => {
+            let label = ep.title || `에피소드 ${index + 1}`;
+            if (label.length > 100) label = label.substring(0, 97) + '...';
+            const value = ep.enclosure?.url || '';
+
+            return new StringSelectMenuOptionBuilder()
+              .setLabel(label)
+              .setDescription(
+                ep.pubDate ? new Date(ep.pubDate).toLocaleDateString('ko-KR') : '날짜 없음'
+              )
+              .setValue(value.length > 100 ? value.substring(0, 100) : value); // Discord limitation
+          })
+          .filter((opt) => opt.data.value && opt.data.value.startsWith('http'))
+          .slice(0, 10);
+
+        if (selectOptions.length === 0) {
+          await interaction.editReply({
+            embeds: [createErrorEmbed('재생 가능한 오디오 파일을 찾을 수 없습니다.')],
+          });
+          return;
+        }
+
+        const selectMenu = new StringSelectMenuBuilder()
+          .setCustomId('radio_vod_select')
+          .setPlaceholder('재생할 에피소드를 선택하세요')
+          .addOptions(selectOptions);
+
+        const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 
         const embed = new EmbedBuilder()
-          .setColor(Colors.SUCCESS)
-          .setTitle('📻 라디오 종료')
-          .setDescription('재생을 중지하고 음성 채널에서 나갔습니다.');
+          .setColor(Colors.PRIMARY)
+          .setTitle(`🎙️ ${podcastName} 다시듣기`)
+          .setDescription('아래 메뉴에서 다시 듣고 싶은 에피소드를 선택해 주세요!')
+          .setThumbnail(artworkUrl || null);
 
-        await interaction.reply({ embeds: [embed] });
-      } else {
+        const response = await interaction.editReply({ embeds: [embed], components: [row] });
+
+        // 4. Collect Interaction
+        const collector = response.createMessageComponentCollector({
+          componentType: ComponentType.StringSelect,
+          time: 60000,
+        });
+
+        collector.on('collect', (i) => {
+          void (async () => {
+            if (i.user.id !== interaction.user.id) {
+              await i.reply({
+                content: '명령어를 입력한 사용자만 선택할 수 있습니다.',
+                ephemeral: true,
+              });
+              return;
+            }
+
+            const selectedUrl = i.values[0];
+            // Find original episode object for metadata (matching by start of URL due to 100 char limit)
+            const episode = episodes.find(
+              (ep) => ep.enclosure?.url && ep.enclosure.url.startsWith(selectedUrl)
+            );
+
+            await i.deferUpdate();
+
+            try {
+              const existingQueue = player.nodes.get(guildId);
+              if (existingQueue && existingQueue.isPlaying()) existingQueue.delete();
+
+              const track = new Track(player, {
+                title: episode?.title || podcastName,
+                description: 'MBC VOD (다시듣기)',
+                author: podcastName,
+                url: episode?.enclosure?.url || selectedUrl,
+                source: 'arbitrary',
+                thumbnail: artworkUrl || 'https://i.imgur.com/8QGZ2u1.png',
+                duration: '0:00',
+                views: 0,
+                requestedBy: i.user,
+              });
+
+              await player.play(voiceChannel, track, {
+                nodeOptions: { metadata: interaction, selfDeaf: false, leaveOnEmpty: true },
+              });
+
+              const playEmbed = new EmbedBuilder()
+                .setColor(Colors.SUCCESS)
+                .setTitle(`🎙️ 재생 시작: ${episode?.title || podcastName}`)
+                .setDescription(
+                  `음성 채널 **${voiceChannel.name}**에서 다시듣기를 재생합니다.\n\n*(노래가 나오면 \`/radio song [제목]\` 명령어로 원곡을 튼 후 이어서 들을 수 있습니다!)*`
+                )
+                .setThumbnail(artworkUrl || null);
+
+              await i.editReply({ embeds: [playEmbed], components: [] });
+            } catch (err) {
+              logger.error('Failed to play VOD', err);
+              await i.editReply({
+                embeds: [createErrorEmbed('에피소드 재생에 실패했습니다.')],
+                components: [],
+              });
+            }
+          })();
+        });
+
+        collector.on('end', (collected) => {
+          if (collected.size === 0) {
+            void interaction.editReply({ components: [] }).catch(() => {});
+          }
+        });
+      } catch (error: unknown) {
+        logger.error('Failed to fetch VOD', error);
+        await interaction.editReply({
+          embeds: [createErrorEmbed('팟캐스트 정보를 가져오는데 실패했습니다.')],
+        });
+      }
+    }
+
+    // --- SONG (INSERT/RESUME) ---
+    if (subcommand === 'song') {
+      const songTitle = interaction.options.getString('title', true);
+      const queue = player.nodes.get(guildId);
+
+      if (!queue || !queue.isPlaying()) {
         await interaction.reply({
-          embeds: [createErrorEmbed('현재 이 서버에서 재생 중인 라디오가 없습니다.')],
+          embeds: [createErrorEmbed('현재 재생 중인 라디오/팟캐스트가 없습니다.')],
           ephemeral: true,
         });
+        return;
+      }
+
+      await interaction.deferReply();
+
+      try {
+        // 1. Search for the song
+        const searchResult = await player.search(songTitle, { requestedBy: interaction.user });
+        if (!searchResult || !searchResult.tracks.length) {
+          await interaction.editReply({
+            embeds: [createErrorEmbed(`'${songTitle}' 곡을 찾을 수 없습니다.`)],
+          });
+          return;
+        }
+
+        const songTrack = searchResult.tracks[0];
+        const currentTrack = queue.currentTrack;
+        const currentTimeMs = queue.node.streamTime;
+
+        if (currentTrack) {
+          // 2. Clone the current VOD/Radio track and add `resumeFrom` metadata
+          const clonedVOD = new Track(player, {
+            title: currentTrack.title,
+            author: currentTrack.author,
+            url: currentTrack.url,
+            source: currentTrack.source as 'arbitrary',
+            thumbnail: currentTrack.thumbnail,
+            duration: currentTrack.duration,
+            views: currentTrack.views,
+            description: currentTrack.description,
+            requestedBy: interaction.user,
+          });
+
+          // Metadata is readonly in types, but mutable in JS. Bypass TS strict check.
+          Object.assign(clonedVOD, { metadata: { resumeFrom: currentTimeMs } });
+
+          // 3. Queue manipulation
+          queue.insertTrack(songTrack, 0); // Next song to play is the requested song
+          queue.insertTrack(clonedVOD, 1); // After that, resume the VOD
+
+          // Skip the current track to start the song immediately
+          queue.node.skip();
+
+          const embed = new EmbedBuilder()
+            .setColor(Colors.SUCCESS)
+            .setTitle(`🎶 팟캐스트 일시정지 & 원곡 재생`)
+            .setDescription(
+              `**${songTrack.title}** 재생을 시작합니다!\n원곡이 끝나면 아까 듣던 팟캐스트로 자동 복귀합니다.`
+            )
+            .setThumbnail(songTrack.thumbnail || null);
+
+          await interaction.editReply({ embeds: [embed] });
+        } else {
+          await interaction.editReply({
+            content: '현재 트랙 정보를 찾을 수 없어 끼어들기를 할 수 없습니다.',
+          });
+        }
+      } catch (error: unknown) {
+        logger.error('Failed to insert song', error);
+        await interaction.editReply({ embeds: [createErrorEmbed('곡 끼어들기에 실패했습니다.')] });
       }
     }
   },

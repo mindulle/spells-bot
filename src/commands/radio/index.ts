@@ -245,7 +245,7 @@ export const radioCommand: Command = {
           .setColor(Colors.PRIMARY)
           .setTitle(`🎙️ ${podcastName} 다시듣기`)
           .setDescription('아래 메뉴에서 다시 듣고 싶은 에피소드를 선택해 주세요!')
-          .setThumbnail(artworkUrl);
+          .setThumbnail(artworkUrl || null);
 
         const response = await interaction.editReply({ embeds: [embed], components: [row] });
 
@@ -368,7 +368,8 @@ export const radioCommand: Command = {
             requestedBy: interaction.user,
           });
 
-          clonedVOD.metadata = { resumeFrom: currentTimeMs };
+          // Metadata is readonly in types, but mutable in JS. Bypass TS strict check.
+          Object.assign(clonedVOD, { metadata: { resumeFrom: currentTimeMs } });
 
           // 3. Queue manipulation
           queue.insertTrack(songTrack, 0); // Next song to play is the requested song

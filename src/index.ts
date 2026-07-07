@@ -17,10 +17,12 @@ import { utilsCommand } from './commands/utils/index';
 import { paperclipCommand } from './commands/paperclip/index';
 import { radioCommand } from './commands/radio/index';
 
+import { Player } from 'discord-player';
+
 // Load environment variables
 dotenv.config();
 
-export let player: any;
+export let player: Player;
 
 async function main() {
   try {
@@ -47,19 +49,20 @@ async function main() {
       partials: [Partials.Message, Partials.Reaction, Partials.User],
     });
 
-    // Initialize discord-player dynamically to avoid top-level require issues
-    const { Player } = await import('discord-player');
     const { DefaultExtractors } = await import('@discord-player/extractor');
     player = new Player(client);
     await player.extractors.loadMulti(DefaultExtractors);
 
     // Global player event to handle VOD resuming
-    player.events.on('playerStart', (queue: any, track: any) => {
-      if (track.resumeFrom) {
-        logger.info(`Resuming track ${track.title} from ${track.resumeFrom}ms`);
+    player.events.on('playerStart', (queue, track) => {
+      // Use metadata to extract resumeFrom
+      const metadata = track.metadata as Record<string, unknown> | null;
+      const resumeFrom = metadata?.resumeFrom;
+      if (typeof resumeFrom === 'number') {
+        logger.info(`Resuming track ${track.title} from ${resumeFrom}ms`);
         // Use a slight timeout to ensure the track has actually started decoding before seeking
         setTimeout(() => {
-          queue.node.seek(track.resumeFrom);
+          queue.node.seek(resumeFrom).catch((err) => logger.error('Failed to seek', err));
         }, 500);
       }
     });

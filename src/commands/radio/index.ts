@@ -71,19 +71,23 @@ function attachPlayerControlsCollector(message: Message, guildId: string, userId
       }
 
       try {
+        await i.deferUpdate();
+
         if (i.customId === 'radio_control_pause') {
           currentQueue.node.setPaused(true);
-          await i.reply({ content: '⏸️ 라디오를 일시정지했습니다.', ephemeral: true });
+          await i.followUp({ content: '⏸️ 라디오를 일시정지했습니다.', ephemeral: true });
         } else if (i.customId === 'radio_control_resume') {
           currentQueue.node.setPaused(false);
-          await i.reply({ content: '▶️ 라디오 재생을 계속합니다.', ephemeral: true });
+          await i.followUp({ content: '▶️ 라디오 재생을 계속합니다.', ephemeral: true });
         } else if (i.customId === 'radio_control_stop') {
           currentQueue.delete();
-          await i.reply({ content: '⏹️ 라디오 재생을 종료합니다.', ephemeral: true });
+          await i.followUp({ content: '⏹️ 라디오 재생을 종료합니다.', ephemeral: true });
         }
       } catch (err) {
         logger.error('Failed to handle player control', err);
-        await i.reply({ content: '조작 중 오류가 발생했습니다.', ephemeral: true });
+        await i
+          .followUp({ content: '조작 중 오류가 발생했습니다.', ephemeral: true })
+          .catch(() => {});
       }
     })();
   });

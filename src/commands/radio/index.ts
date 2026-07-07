@@ -7,6 +7,10 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   ComponentType,
+  ButtonBuilder,
+  ButtonStyle,
+  Message,
+  ButtonInteraction,
 } from 'discord.js';
 import axios from 'axios';
 import Parser from 'rss-parser';
@@ -25,6 +29,65 @@ interface ITunesResult {
 }
 
 const rssParser = new Parser();
+
+// Helper to add player controls
+function getPlayerControlRow() {
+  const pauseBtn = new ButtonBuilder()
+    .setCustomId('radio_control_pause')
+    .setLabel('일시정지')
+    .setStyle(ButtonStyle.Secondary)
+    .setEmoji('⏸️');
+  const resumeBtn = new ButtonBuilder()
+    .setCustomId('radio_control_resume')
+    .setLabel('재생')
+    .setStyle(ButtonStyle.Primary)
+    .setEmoji('▶️');
+  const stopBtn = new ButtonBuilder()
+    .setCustomId('radio_control_stop')
+    .setLabel('종료')
+    .setStyle(ButtonStyle.Danger)
+    .setEmoji('⏹️');
+
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(pauseBtn, resumeBtn, stopBtn);
+}
+
+function attachPlayerControlsCollector(message: Message, guildId: string, userId: string) {
+  const collector = message.createMessageComponentCollector({
+    componentType: ComponentType.Button,
+    time: 12 * 60 * 60 * 1000, // 12 hours
+  });
+
+  collector.on('collect', (i: ButtonInteraction) => {
+    void (async () => {
+      if (i.user.id !== userId) {
+        await i.reply({ content: '명령어를 입력한 사용자만 조작할 수 있습니다.', ephemeral: true });
+        return;
+      }
+
+      const currentQueue = player.nodes.get(guildId);
+      if (!currentQueue) {
+        await i.reply({ content: '현재 재생 중인 라디오가 없습니다.', ephemeral: true });
+        return;
+      }
+
+      try {
+        if (i.customId === 'radio_control_pause') {
+          currentQueue.node.setPaused(true);
+          await i.reply({ content: '⏸️ 라디오를 일시정지했습니다.', ephemeral: true });
+        } else if (i.customId === 'radio_control_resume') {
+          currentQueue.node.setPaused(false);
+          await i.reply({ content: '▶️ 라디오 재생을 계속합니다.', ephemeral: true });
+        } else if (i.customId === 'radio_control_stop') {
+          currentQueue.delete();
+          await i.reply({ content: '⏹️ 라디오 재생을 종료합니다.', ephemeral: true });
+        }
+      } catch (err) {
+        logger.error('Failed to handle player control', err);
+        await i.reply({ content: '조작 중 오류가 발생했습니다.', ephemeral: true });
+      }
+    })();
+  });
+}
 
 export const radioCommand: Command = {
   data: new SlashCommandBuilder()
@@ -160,7 +223,11 @@ export const radioCommand: Command = {
           .setColor(Colors.SUCCESS)
           .setTitle(`📻 ${channelName} 재생 시작`)
           .setDescription(`음성 채널 **${voiceChannel.name}**에서 실시간 라디오를 재생합니다.`);
-        await interaction.editReply({ embeds: [embed] });
+        const msg = await interaction.editReply({
+          embeds: [embed],
+          components: [getPlayerControlRow()],
+        });
+        attachPlayerControlsCollector(msg, guildId, interaction.user.id);
       } catch (error: unknown) {
         logger.error('Failed to play radio', error);
         await interaction.editReply({
@@ -202,19 +269,29 @@ export const radioCommand: Command = {
 
         // 2. Parse RSS Feed
         const feed = await rssParser.parseURL(feedUrl);
-        const episodes = feed.items.slice(0, 10); // Get latest 10 episodes
+        const validEpisodes = feed.items.filter(
+          (ep) => ep.enclosure?.url && ep.enclosure.url.startsWith('http')
+        );
 
-        if (episodes.length === 0) {
+        if (validEpisodes.length === 0) {
           await interaction.editReply({
-            embeds: [createErrorEmbed('이 팟캐스트에 등록된 에피소드가 없습니다.')],
+            embeds: [createErrorEmbed('이 팟캐스트에 재생 가능한 에피소드가 없습니다.')],
           });
           return;
         }
 
-        // 3. Create Select Menu
-        const selectOptions = episodes
-          .map((ep, index) => {
-            let label = ep.title || `에피소드 ${index + 1}`;
+        // Pagination setup
+        let currentPage = 0;
+        const itemsPerPage = 25;
+        const maxPage = Math.ceil(validEpisodes.length / itemsPerPage) - 1;
+
+        const generateComponents = (page: number) => {
+          const start = page * itemsPerPage;
+          const end = start + itemsPerPage;
+          const currentEpisodes = validEpisodes.slice(start, end);
+
+          const selectOptions = currentEpisodes.map((ep, index) => {
+            let label = ep.title || `에피소드 ${start + index + 1}`;
             if (label.length > 100) label = label.substring(0, 97) + '...';
             const value = ep.enclosure?.url || '';
 
@@ -223,94 +300,121 @@ export const radioCommand: Command = {
               .setDescription(
                 ep.pubDate ? new Date(ep.pubDate).toLocaleDateString('ko-KR') : '날짜 없음'
               )
-              .setValue(value.length > 100 ? value.substring(0, 100) : value); // Discord limitation
-          })
-          .filter((opt) => opt.data.value && opt.data.value.startsWith('http'))
-          .slice(0, 10);
-
-        if (selectOptions.length === 0) {
-          await interaction.editReply({
-            embeds: [createErrorEmbed('재생 가능한 오디오 파일을 찾을 수 없습니다.')],
+              .setValue(value.length > 100 ? value.substring(0, 100) : value);
           });
-          return;
-        }
 
-        const selectMenu = new StringSelectMenuBuilder()
-          .setCustomId('radio_vod_select')
-          .setPlaceholder('재생할 에피소드를 선택하세요')
-          .addOptions(selectOptions);
+          const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId('radio_vod_select')
+            .setPlaceholder(`에피소드 선택 (페이지 ${page + 1}/${maxPage + 1})`)
+            .addOptions(selectOptions);
 
-        const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+          const row1 = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
+
+          const prevButton = new ButtonBuilder()
+            .setCustomId('radio_vod_prev')
+            .setLabel('이전 페이지')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(page === 0);
+
+          const nextButton = new ButtonBuilder()
+            .setCustomId('radio_vod_next')
+            .setLabel('다음 페이지')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page === maxPage);
+
+          const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(prevButton, nextButton);
+
+          return [row1, row2];
+        };
 
         const embed = new EmbedBuilder()
           .setColor(Colors.PRIMARY)
           .setTitle(`🎙️ ${podcastName} 다시듣기`)
-          .setDescription('아래 메뉴에서 다시 듣고 싶은 에피소드를 선택해 주세요!')
+          .setDescription(
+            `총 **${validEpisodes.length}개**의 에피소드가 있습니다.\n아래 메뉴에서 다시 듣고 싶은 에피소드를 선택해 주세요!`
+          )
           .setThumbnail(artworkUrl || null);
 
-        const response = await interaction.editReply({ embeds: [embed], components: [row] });
+        const response = await interaction.editReply({
+          embeds: [embed],
+          components: generateComponents(currentPage),
+        });
 
         // 4. Collect Interaction
         const collector = response.createMessageComponentCollector({
-          componentType: ComponentType.StringSelect,
-          time: 60000,
+          time: 120000, // 2 minutes
         });
 
         collector.on('collect', (i) => {
           void (async () => {
             if (i.user.id !== interaction.user.id) {
               await i.reply({
-                content: '명령어를 입력한 사용자만 선택할 수 있습니다.',
+                content: '명령어를 입력한 사용자만 조작할 수 있습니다.',
                 ephemeral: true,
               });
               return;
             }
 
-            const selectedUrl = i.values[0];
-            // Find original episode object for metadata (matching by start of URL due to 100 char limit)
-            const episode = episodes.find(
-              (ep) => ep.enclosure?.url && ep.enclosure.url.startsWith(selectedUrl)
-            );
-
-            await i.deferUpdate();
-
-            try {
-              const existingQueue = player.nodes.get(guildId);
-              if (existingQueue && existingQueue.isPlaying()) existingQueue.delete();
-
-              const track = new Track(player, {
-                title: episode?.title || podcastName,
-                description: 'MBC VOD (다시듣기)',
-                author: podcastName,
-                url: episode?.enclosure?.url || selectedUrl,
-                source: 'arbitrary',
-                engine: episode?.enclosure?.url || selectedUrl, // Required by AttachmentExtractor
-                thumbnail: artworkUrl || 'https://i.imgur.com/8QGZ2u1.png',
-                duration: '0:00',
-                views: 0,
-                requestedBy: i.user,
-              });
-
-              await player.play(voiceChannel, track, {
-                nodeOptions: { metadata: interaction, selfDeaf: false, leaveOnEmpty: true },
-              });
-
-              const playEmbed = new EmbedBuilder()
-                .setColor(Colors.SUCCESS)
-                .setTitle(`🎙️ 재생 시작: ${episode?.title || podcastName}`)
-                .setDescription(
-                  `음성 채널 **${voiceChannel.name}**에서 다시듣기를 재생합니다.\n\n*(노래가 나오면 \`/radio song [제목]\` 명령어로 원곡을 튼 후 이어서 들을 수 있습니다!)*`
-                )
-                .setThumbnail(artworkUrl || null);
-
-              await i.editReply({ embeds: [playEmbed], components: [] });
-            } catch (err) {
-              logger.error('Failed to play VOD', err);
-              await i.editReply({
-                embeds: [createErrorEmbed('에피소드 재생에 실패했습니다.')],
-                components: [],
-              });
+            if (i.isButton()) {
+              if (i.customId === 'radio_vod_prev' && currentPage > 0) {
+                currentPage--;
+              } else if (i.customId === 'radio_vod_next' && currentPage < maxPage) {
+                currentPage++;
+              }
+              await i.update({ components: generateComponents(currentPage) });
+              return;
             }
+
+            if (i.isStringSelectMenu() && i.customId === 'radio_vod_select') {
+              const selectedUrl = i.values[0];
+              const episode = validEpisodes.find((ep) =>
+                ep.enclosure?.url?.startsWith(selectedUrl)
+              );
+
+              await i.deferUpdate();
+
+              try {
+                const existingQueue = player.nodes.get(guildId);
+                if (existingQueue && existingQueue.isPlaying()) existingQueue.delete();
+
+                const track = new Track(player, {
+                  title: episode?.title || podcastName,
+                  description: 'MBC VOD (다시듣기)',
+                  author: podcastName,
+                  url: episode?.enclosure?.url || selectedUrl,
+                  source: 'arbitrary',
+                  engine: episode?.enclosure?.url || selectedUrl, // Required by AttachmentExtractor
+                  thumbnail: artworkUrl || 'https://i.imgur.com/8QGZ2u1.png',
+                  duration: '0:00',
+                  views: 0,
+                  requestedBy: i.user,
+                });
+
+                await player.play(voiceChannel, track, {
+                  nodeOptions: { metadata: interaction, selfDeaf: false, leaveOnEmpty: true },
+                });
+
+                const playEmbed = new EmbedBuilder()
+                  .setColor(Colors.SUCCESS)
+                  .setTitle(`🎙️ 재생 시작: ${episode?.title || podcastName}`)
+                  .setDescription(
+                    `음성 채널 **${voiceChannel.name}**에서 다시듣기를 재생합니다.\n\n*(노래가 나오면 \`/radio song [제목]\` 명령어로 원곡을 튼 후 이어서 들을 수 있습니다!)*`
+                  )
+                  .setThumbnail(artworkUrl || null);
+
+                const msg = await i.editReply({
+                  embeds: [playEmbed],
+                  components: [getPlayerControlRow()],
+                });
+                attachPlayerControlsCollector(msg, guildId, interaction.user.id);
+              } catch (err) {
+                logger.error('Failed to play VOD', err);
+                await i.editReply({
+                  embeds: [createErrorEmbed('에피소드 재생에 실패했습니다.')],
+                  components: [],
+                });
+              }
+            } // Close if (i.isStringSelectMenu())
           })();
         });
 
@@ -392,7 +496,11 @@ export const radioCommand: Command = {
             )
             .setThumbnail(songTrack.thumbnail || null);
 
-          await interaction.editReply({ embeds: [embed] });
+          const msg = await interaction.editReply({
+            embeds: [embed],
+            components: [getPlayerControlRow()],
+          });
+          attachPlayerControlsCollector(msg, guildId, interaction.user.id);
         } else {
           await interaction.editReply({
             content: '현재 트랙 정보를 찾을 수 없어 끼어들기를 할 수 없습니다.',

@@ -2,6 +2,9 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from '
 import type { Command } from '../../types/commands';
 import { healthService } from '../../services/health.service';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
+import axios from 'axios';
+
+const N8N_ANKI_SYNC_WEBHOOK = 'https://n8n.sonagi.space/webhook/anki-sync';
 
 export const infraCommand: Command = {
   data: new SlashCommandBuilder()
@@ -11,6 +14,11 @@ export const infraCommand: Command = {
       subcommand
         .setName('status')
         .setDescription('K3s, MinIO, n8n 등 주요 인프라의 헬스체크 결과를 조회합니다.')
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('anki-sync')
+        .setDescription('llm-wiki 마크다운을 Anki에 수동 동기화합니다.')
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -45,6 +53,31 @@ export const infraCommand: Command = {
         await interaction.editReply({ embeds: [embed] });
         break;
       }
+
+      case 'anki-sync': {
+        await interaction.deferReply();
+
+        try {
+          await axios.post(N8N_ANKI_SYNC_WEBHOOK, { source: 'spells-bot' });
+
+          const embed = new EmbedBuilder()
+            .setColor(Colors.SUCCESS)
+            .setTitle('📚 Anki Sync 시작됨')
+            .setDescription(
+              'llm-wiki → Anki 동기화가 백그라운드에서 시작됐습니다.\n완료까지 약 1~2분 소요됩니다.'
+            )
+            .addFields({ name: 'Trigger', value: 'Manual (spells-bot)', inline: true })
+            .setTimestamp();
+
+          await interaction.editReply({ embeds: [embed] });
+        } catch (error) {
+          await interaction.editReply({
+            embeds: [createErrorEmbed('Anki Sync 트리거에 실패했습니다. n8n 상태를 확인해주세요.')],
+          });
+        }
+        break;
+      }
+
       default:
         await interaction.reply({
           embeds: [createErrorEmbed('알 수 없는 서브커맨드입니다.')],

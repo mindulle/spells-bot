@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
 
@@ -42,4 +43,4 @@ async function clearCommands() {
   }
 }
 
-clearCommands();
+void clearCommands();

@@ -4,7 +4,8 @@ import { healthService } from '../../services/health.service';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import axios from 'axios';
 
-const N8N_ANKI_SYNC_WEBHOOK = 'https://n8n.sonagi.space/webhook/anki-sync';
+const N8N_ANKI_SYNC_WEBHOOK =
+  process.env.N8N_ANKI_SYNC_WEBHOOK || 'https://n8n.sonagi.space/webhook/anki-sync';
 
 export const infraCommand: Command = {
   data: new SlashCommandBuilder()
@@ -58,7 +59,7 @@ export const infraCommand: Command = {
         await interaction.deferReply();
 
         try {
-          await axios.post(N8N_ANKI_SYNC_WEBHOOK, { source: 'spells-bot' });
+          await axios.post(N8N_ANKI_SYNC_WEBHOOK, { source: 'spells-bot' }, { timeout: 5000 });
 
           const embed = new EmbedBuilder()
             .setColor(Colors.SUCCESS)

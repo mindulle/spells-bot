@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
 
@@ -35,11 +36,13 @@ async function clearCommands() {
     await rest.put(Routes.applicationCommands(clientId), { body: [] });
     console.log('✅ Successfully deleted all global commands!');
 
-    console.log('\n🎉 모든 명령어가 초기화되었습니다! 이제 "npm run deploy-commands"를 실행하여 명령어를 1개로 깔끔하게 재등록하세요.');
+    console.log(
+      '\n🎉 모든 명령어가 초기화되었습니다! 이제 "npm run deploy-commands"를 실행하여 명령어를 1개로 깔끔하게 재등록하세요.'
+    );
   } catch (error) {
     console.error('❌ Error clearing commands:', error);
     process.exit(1);
   }
 }
 
-clearCommands();
+void clearCommands();

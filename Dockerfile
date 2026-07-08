@@ -1,14 +1,17 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
+
+# Install build dependencies for native modules (opus, sodium)
+RUN apt-get update && apt-get install -y python3 build-essential && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies (ignoring husky post-install scripts)
-RUN npm ci --ignore-scripts
+# Install dependencies (HUSKY=0 prevents husky from installing hooks)
+RUN HUSKY=0 npm ci
 
 # Copy source code
 COPY src ./src
@@ -17,23 +20,27 @@ COPY scripts ./scripts
 # Build TypeScript
 RUN npm run build
 
+# Remove devDependencies
+RUN HUSKY=0 npm prune --omit=dev
+
 # Production stage
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 
 WORKDIR /app
+
+# Install ffmpeg for audio streaming
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only (ignoring husky)
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-
-# Copy built files from builder
+# Copy built files and pruned node_modules from builder
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN groupadd -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nodejs
 
 USER nodejs
 

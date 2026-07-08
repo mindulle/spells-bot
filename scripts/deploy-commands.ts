@@ -5,6 +5,8 @@ import { cdnCommand } from '../src/commands/cdn/index';
 import { galleryCommand } from '../src/commands/gallery/index';
 import { playCommand } from '../src/commands/playgrounds/index';
 import { utilsCommand } from '../src/commands/utils/index';
+import { paperclipCommand } from '../src/commands/paperclip/index';
+import { radioCommand } from '../src/commands/radio/index';
 
 dotenv.config();
 
@@ -14,6 +16,8 @@ const commands = [
   galleryCommand.data.toJSON(),
   playCommand.data.toJSON(),
   utilsCommand.data.toJSON(),
+  paperclipCommand.data.toJSON(),
+  radioCommand.data.toJSON(),
 ];
 
 const token = process.env.DISCORD_TOKEN;

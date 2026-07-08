@@ -1,5 +1,96 @@
 # Changelog
 
+## [1.6.1](https://github.com/mindulle/spells-bot/compare/v1.6.0...v1.6.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **docker:** allow native modules to compile by removing ignore-scripts and optimize multi-stage build ([c9748ba](https://github.com/mindulle/spells-bot/commit/c9748bab04ea75aa7d5b6e3d583490aca8a55fcf))
+* **radio:** add -live 1 flag to optimize WebM muxer for live streaming pipe ([eacd279](https://github.com/mindulle/spells-bot/commit/eacd27940854fb24072b2f2959dcdeb7fe89151f))
+* **radio:** add -re flag to ffmpeg and upgrade docker base to bookworm ([f630f50](https://github.com/mindulle/spells-bot/commit/f630f50b75b24c95e7f75d430713021621350f22))
+* **radio:** add -re flag to ffmpeg and upgrade docker base to bookworm ([1dac8e9](https://github.com/mindulle/spells-bot/commit/1dac8e9173780d8b1fbe8525b5de9b86b5d08f04))
+* **radio:** add reconnect_at_eof and reconnect_on_network_error flags based on PR review ([07863e8](https://github.com/mindulle/spells-bot/commit/07863e8e2deb05870b830030993ae3ae5104e24a))
+* **radio:** address PR code review feedback ([df47d3d](https://github.com/mindulle/spells-bot/commit/df47d3df0f4f311c3512c24511619adbccbff3c7))
+* **radio:** disable selfDeaf and add 2s delay for DAVE E2EE handshake ([c8c29d7](https://github.com/mindulle/spells-bot/commit/c8c29d736e468cdd581cca19a66d7c9aeab3ae2f))
+* **radio:** disable selfDeaf and add 2s delay for DAVE E2EE handshake ([73e6b5e](https://github.com/mindulle/spells-bot/commit/73e6b5ea7368acf5113b7b7555e9716069a6631d))
+* **radio:** fallback to StreamType.Raw and opusscript ([d36af80](https://github.com/mindulle/spells-bot/commit/d36af8056718d1111aaaadf7644feef8ba034bfc))
+* **radio:** fallback to StreamType.Raw and opusscript due to extreme instability of djs voice demuxers ([4c00058](https://github.com/mindulle/spells-bot/commit/4c0005847f27a7b1f2ce40a04daaacab842252ed))
+* **radio:** remove -re flag to prevent audio player starvation ([7068beb](https://github.com/mindulle/spells-bot/commit/7068bebfd4c65e14b5bc5bfd3fe57bd1a2cb6d2b))
+* **radio:** remove -re flag to prevent player starvation ([7df192c](https://github.com/mindulle/spells-bot/commit/7df192ca7832ef89e7818f1f04047f4e0629a27f))
+* **radio:** revert command name from testradio back to radio ([6dc42d0](https://github.com/mindulle/spells-bot/commit/6dc42d0f0f3738a741840ffe2702858c3b02eb54))
+* **radio:** set ffmpeg ogg page_duration to 20ms to fix discord voice silence ([0c6916c](https://github.com/mindulle/spells-bot/commit/0c6916c1e280b72161a1a4facb35581ddc3a492a))
+* **radio:** set ffmpeg ogg page_duration to 20ms to fix discord voice silence ([3b0df0b](https://github.com/mindulle/spells-bot/commit/3b0df0b70444ec0507c67de775f86eb7579eeedd))
+* **radio:** switch docker base to debian and use native discordjs/opus ([1e20416](https://github.com/mindulle/spells-bot/commit/1e204165b02503e53dbc9ddc7efdfcf55dedc558))
+* **radio:** switch docker base to debian and use native discordjs/opus for stable streaming ([eff9c9f](https://github.com/mindulle/spells-bot/commit/eff9c9fdeecbf1cd645eb1c853cfde33bfeb9253))
+* **radio:** switch from Ogg to WebmOpus to resolve discord.js voice demuxing bugs ([64c0e50](https://github.com/mindulle/spells-bot/commit/64c0e50f6d153043a20f307ef4158e10ae2d6dd0))
+* **radio:** switch from Ogg to WebmOpus to resolve discord.js voice demuxing bugs ([fab531a](https://github.com/mindulle/spells-bot/commit/fab531adda6a0426aef3c1804688e5952d179367))
+* **radio:** switch to opusscript and raw PCM stream to resolve silence issue ([0af8d0b](https://github.com/mindulle/spells-bot/commit/0af8d0be58781e9958343843fad1148b62a82abf))
+* **radio:** switch to opusscript and raw PCM stream to resolve silence issue ([f750d0d](https://github.com/mindulle/spells-bot/commit/f750d0d00e810b761bb5fcb44eebee3f8604889b))
+* **radio:** switch to robust s16le chunking to fix discord.js/voice silence issue ([80eb0ae](https://github.com/mindulle/spells-bot/commit/80eb0ae7f5ca7a6487c93d6263bcf9244b50b7b6))
+* **radio:** switch to robust s16le chunking to fix silence issue ([0219212](https://github.com/mindulle/spells-bot/commit/0219212fb47997eba1890b54bc947630b109666d))
+
+## [1.6.0](https://github.com/mindulle/spells-bot/compare/v1.5.0...v1.6.0) (2026-07-06)
+
+
+### Features
+
+* **paperclip:** Support multi-company selection (Mindulle/Life) ([5a1359c](https://github.com/mindulle/spells-bot/commit/5a1359c776172814639ba041f0023b1e3a60b396))
+* **playgrounds:** add /play run command using Piston API ([9e20912](https://github.com/mindulle/spells-bot/commit/9e209122951635cb599f69962d6f256b5f5c1a81))
+* **playgrounds:** add /play run command using Piston API ([94f1cad](https://github.com/mindulle/spells-bot/commit/94f1caded7d0e7063911f558f4043fdd1e926b17))
+* **radio:** add mbc radio streaming voice command ([6c046d4](https://github.com/mindulle/spells-bot/commit/6c046d466b95416ed0dc357d9cbbcf960e4476a6))
+* **radio:** add mbc radio streaming voice command ([49e223a](https://github.com/mindulle/spells-bot/commit/49e223ad23bd5d19c997d20f222d7c8ca9d0ee28))
+* 페이퍼클립 다중 회사(Multi-Company) 선택 기능 추가 ([31508c8](https://github.com/mindulle/spells-bot/commit/31508c8092884103bfdd1c3ecd99298f007ec549))
+* 페이퍼클립 이슈 목록 조회 커맨드 추가 ([2103973](https://github.com/mindulle/spells-bot/commit/2103973cf3cb8681ee07df8d60bd431cfc26d8f9))
+
+
+### Bug Fixes
+
+* **bot:** add GuildVoiceStates intent to allow joining voice channels ([8bf5958](https://github.com/mindulle/spells-bot/commit/8bf595825b1357a723a69c97aa14301a4bf17971))
+* **bot:** add GuildVoiceStates intent to allow joining voice channels ([e8775ce](https://github.com/mindulle/spells-bot/commit/e8775ce866030dd8bed5484acdb879dd4f77f63b))
+* **deploy:** register radio slash command to discord ([8976615](https://github.com/mindulle/spells-bot/commit/897661523c8c9ef8359fd412b615a9aaf00a2432))
+* **docker:** install ffmpeg in alpine image for voice streaming ([38b14d2](https://github.com/mindulle/spells-bot/commit/38b14d2849deccc99d2f2f1de4c6c96574ad5459))
+* **docker:** install ffmpeg in alpine image for voice streaming ([168e862](https://github.com/mindulle/spells-bot/commit/168e86257dc9b3f46bde4bb587a65a63b98edfc2))
+* **docker:** optimize image size by moving ffmpeg-static to devDeps and removing native libsodium ([e0c97ea](https://github.com/mindulle/spells-bot/commit/e0c97ea2bc3aacb670430e9adc730240b49147b2))
+* **paperclip:** Use correct API endpoint with companyId ([94c026e](https://github.com/mindulle/spells-bot/commit/94c026e6b59ec44a4242c1e2771fa01a56e4e289))
+* **playgrounds:** address PR feedback - markdown trim, sanitize backticks, handle 429 rate limit ([3b82d2a](https://github.com/mindulle/spells-bot/commit/3b82d2a2b83a3bbae447422118e44a2a5c544a35))
+* **playgrounds:** apply ai pr reviewer suggestions ([673c57e](https://github.com/mindulle/spells-bot/commit/673c57e6e0bf641ff2f0c43c7f8f1e9e8f31421c))
+* **playgrounds:** switch piston endpoint to internal k8s service ([561d044](https://github.com/mindulle/spells-bot/commit/561d044b0608b8d9b1870d96a2e6a177be77219c))
+* **playgrounds:** switch piston endpoint to internal k8s service ([12af079](https://github.com/mindulle/spells-bot/commit/12af0793fe7779b7cb8958b0d271a2680b290dfa))
+* **playgrounds:** use base url for piston endpoint to handle trailing slashes robustly ([2528c4d](https://github.com/mindulle/spells-bot/commit/2528c4d21c90b217e69a9a7c966cd8bf845bf212))
+* **radio:** apply ai code review suggestions for ffmpeg robustness and startup delay ([cd735eb](https://github.com/mindulle/spells-bot/commit/cd735eb31609222827a331dc2cdc802f6ef9c260))
+* **radio:** manually transcode HLS to OggOpus using spawned ffmpeg ([dfb6777](https://github.com/mindulle/spells-bot/commit/dfb6777db9b8e15d42c378d5cb6e8a8ec7fecd25))
+* **radio:** manually transcode HLS to OggOpus using spawned ffmpeg to prevent silence ([9ffbd1c](https://github.com/mindulle/spells-bot/commit/9ffbd1c00246689c952864d35a7ea575eb039255))
+
+## [1.5.0](https://github.com/mindulle/spells-bot/compare/v1.4.0...v1.5.0) (2026-07-05)
+
+
+### Features
+
+* Add Paperclip issue creation slash command and service ([def7349](https://github.com/mindulle/spells-bot/commit/def734964083c38126b3c2900beaab6f3bdde12a))
+* Add script to clear duplicate Discord application commands ([8e28f04](https://github.com/mindulle/spells-bot/commit/8e28f04bfc6c1636c800b219c3c22738e9c18662))
+* **discord:** add auto-reaction and n8n webhook routing for web clip channel ([3b79eb0](https://github.com/mindulle/spells-bot/commit/3b79eb0964b4877719da0e9d2e716abfdab25114))
+* **discord:** add auto-reaction and n8n webhook routing for web clip channel ([6c80b38](https://github.com/mindulle/spells-bot/commit/6c80b3870839edfa52ed8be82b62af43774baa13))
+* 페이퍼클립(Paperclip) 제어 슬래시 커맨드 및 API 연동 추가 ([8261593](https://github.com/mindulle/spells-bot/commit/8261593b4d8354f17abe62651199c9ef9899b098))
+
+
+### Bug Fixes
+
+* deploy-commands.ts 스크립트에 paperclipCommand 누락된 문제 해결 ([685fbb9](https://github.com/mindulle/spells-bot/commit/685fbb95995a943e32006d49de7677f9218931be))
+* Include paperclip command in deploy script ([ac5a5b2](https://github.com/mindulle/spells-bot/commit/ac5a5b2845f19930eb0d8d20421f7be0ba3ba29f))
+
+## [1.4.0](https://github.com/mindulle/spells-bot/compare/v1.3.0...v1.4.0) (2026-07-03)
+
+
+### Features
+
+* **utils:** add /utils pokemon command for Dexy bot integration ([1a9bcca](https://github.com/mindulle/spells-bot/commit/1a9bcca815ea7e3b28d3710f4982ef00750dd760))
+* **utils:** Dexy(포켓도감) 봇 흡수 및 통합 ([c4c9827](https://github.com/mindulle/spells-bot/commit/c4c98271c88a91f5f740950d5ade8d2ac4fdb916))
+
+
+### Bug Fixes
+
+* **utils:** apply Nuri's feedback (encode query, handle spaces, add 404 test) ([4e6f933](https://github.com/mindulle/spells-bot/commit/4e6f93326f4edd55a8a7e1254813b6c22b9ac376))
+
 ## [1.3.0](https://github.com/mindulle/spells-bot/compare/v1.2.0...v1.3.0) (2026-07-03)
 
 

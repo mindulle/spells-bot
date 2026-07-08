@@ -1,9 +1,11 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import dotenv from 'dotenv';
 import { logger } from './utils/logger';
 import { assertEnvVariable } from './utils/error-handler';
 import { registerReadyEvent } from './events/ready';
 import { registerInteractionCreateEvent } from './events/interactionCreate';
+import { registerMessageCreateEvent } from './events/messageCreate';
+import { registerMessageReactionAddEvent } from './events/messageReactionAdd';
 import type { CommandMap } from './types/commands';
 
 // Import commands
@@ -12,9 +14,15 @@ import { cdnCommand } from './commands/cdn/index';
 import { galleryCommand } from './commands/gallery/index';
 import { playCommand } from './commands/playgrounds/index';
 import { utilsCommand } from './commands/utils/index';
+import { paperclipCommand } from './commands/paperclip/index';
+import { radioCommand } from './commands/radio/index';
+
+import { Player } from 'discord-player';
 
 // Load environment variables
 dotenv.config();
+
+export let player: Player;
 
 async function main() {
   try {
@@ -24,9 +32,39 @@ async function main() {
     const token = assertEnvVariable('DISCORD_TOKEN');
     assertEnvVariable('DISCORD_CLIENT_ID');
 
+    // Optional environment variables
+    if (!process.env.PAPERCLIP_API_TOKEN) {
+      logger.warn('PAPERCLIP_API_TOKEN is not set. /이슈 command will not work.');
+    }
+
     // Create Discord client
     const client = new Client({
-      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessageReactions,
+      ],
+      partials: [Partials.Message, Partials.Reaction, Partials.User],
+    });
+
+    const { DefaultExtractors } = await import('@discord-player/extractor');
+    player = new Player(client);
+    await player.extractors.loadMulti(DefaultExtractors);
+
+    // Global player event to handle VOD resuming
+    player.events.on('playerStart', (queue, track) => {
+      // Use metadata to extract resumeFrom
+      const metadata = track.metadata as Record<string, unknown> | null;
+      const resumeFrom = metadata?.resumeFrom;
+      if (typeof resumeFrom === 'number') {
+        logger.info(`Resuming track ${track.title} from ${resumeFrom}ms`);
+        // Use a slight timeout to ensure the track has actually started decoding before seeking
+        setTimeout(() => {
+          queue.node.seek(resumeFrom).catch((err) => logger.error('Failed to seek', err));
+        }, 500);
+      }
     });
 
     // Register commands
@@ -36,6 +74,8 @@ async function main() {
       [galleryCommand.data.name, galleryCommand],
       [playCommand.data.name, playCommand],
       [utilsCommand.data.name, utilsCommand],
+      [paperclipCommand.data.name, paperclipCommand],
+      [radioCommand.data.name, radioCommand],
     ]);
 
     logger.info(`Registered ${commands.size} commands`);
@@ -43,6 +83,8 @@ async function main() {
     // Register event handlers
     registerReadyEvent(client);
     registerInteractionCreateEvent(client, commands);
+    registerMessageCreateEvent(client);
+    registerMessageReactionAddEvent(client);
 
     // Login to Discord
     await client.login(token);

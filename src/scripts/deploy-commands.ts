@@ -8,6 +8,7 @@ import { playCommand } from '../commands/playgrounds/index';
 import { utilsCommand } from '../commands/utils/index';
 import { paperclipCommand } from '../commands/paperclip/index';
 import { paperclipApprovalCommand } from '../commands/paperclip/approval';
+import { scheduleCommand } from '../commands/notion/index';
 import { radioCommand } from '../commands/radio/index';
 
 dotenv.config();
@@ -20,6 +21,7 @@ const commands = [
   utilsCommand.data.toJSON(),
   paperclipCommand.data.toJSON(),
   paperclipApprovalCommand.data.toJSON(),
+  scheduleCommand.data.toJSON(),
   radioCommand.data.toJSON(),
 ];
 

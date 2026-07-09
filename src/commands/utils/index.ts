@@ -42,9 +42,6 @@ interface PokemonEntry {
 }
 
 const POKEMON_LIST: PokemonEntry[] = POKEMON_LIST_JSON as PokemonEntry[];
-// JSON.parse(
-// fs.readFileSync(path.join(__dirname, 'pokemon-list.json'), 'utf-8')
-// ) as PokemonEntry[];
 
 export const utilsCommand: Command = {
   data: new SlashCommandBuilder()

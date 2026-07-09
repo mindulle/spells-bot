@@ -249,12 +249,15 @@ export class PaperclipService {
     }
 
     try {
-      const response = await axios.get<PaperclipIssueResponse>(`${apiUrl}/issues/${issueId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await axios.get<PaperclipIssueResponse>(
+        `${apiUrl}/issues/${encodeURIComponent(issueId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       return response.data;
     } catch (error: unknown) {

@@ -224,11 +224,16 @@ export const paperclipCommand: Command = {
 
         // Paperclip API에서 createdAt, updatedAt 등의 추가 정보가 있다면 필드 추가
         if (issue.createdAt) {
-          embed.addFields({
-            name: '생성일',
-            value: new Date(String(issue.createdAt)).toLocaleDateString(),
-            inline: true,
-          });
+          const dateValue =
+            typeof issue.createdAt === 'number' ? issue.createdAt : String(issue.createdAt);
+          const date = new Date(dateValue);
+          if (!isNaN(date.getTime())) {
+            embed.addFields({
+              name: '생성일',
+              value: date.toLocaleDateString(),
+              inline: true,
+            });
+          }
         }
         if (issue.priority) {
           embed.addFields({ name: '우선순위', value: String(issue.priority), inline: true });

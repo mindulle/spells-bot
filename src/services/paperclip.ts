@@ -4,6 +4,7 @@ import type { ChatInputCommandInteraction } from 'discord.js';
 
 export interface PaperclipIssueResponse {
   id: string;
+  identifier?: string;
   title: string;
   description: string;
   status: string;

@@ -20,7 +20,6 @@ import { paperclipAgentCommand } from './commands/paperclip/agent';
 import { scheduleCommand } from './commands/notion/index';
 import { ledgerCommand } from './commands/notion/ledger';
 import { radioCommand } from './commands/radio/index';
-import { deployCommands } from './scripts/deploy-commands';
 
 import { Player } from 'discord-player';
 
@@ -94,10 +93,6 @@ async function main() {
     registerInteractionCreateEvent(client, commands);
     registerMessageCreateEvent(client);
     registerMessageReactionAddEvent(client);
-
-    // Auto-deploy commands to Discord API
-    logger.info('Auto-deploying slash commands to Discord...');
-    await deployCommands();
 
     // Login to Discord
     await client.login(token);

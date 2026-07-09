@@ -81,7 +81,7 @@ describe('utilsCommand', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       const editReplyArg = mockInteraction.editReply.mock.calls[0][0];
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      expect(editReplyArg.embeds[0].data.image.url).toContain('picsum.photos');
+      expect(editReplyArg.embeds[0].data.image.url).toContain('source.unsplash.com');
     });
   });
 
@@ -98,7 +98,7 @@ describe('utilsCommand', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       expect(mockInteraction.deferReply).toHaveBeenCalled();
       expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://random.dog/woof.json?filter=mp4,webm',
+        'https://random.dog/woof.json?filter=mp4,webm,gif',
         expect.any(Object)
       );
 
@@ -145,7 +145,7 @@ describe('utilsCommand', () => {
           height: 4,
           weight: 60,
           types: [{ type: { name: 'electric' } }],
-          sprites: { front_default: 'https://fake-pikachu.jpg' },
+          sprites: { other: { 'official-artwork': { front_default: 'https://fake-pikachu.jpg' } } },
         },
       });
 

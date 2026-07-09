@@ -1,5 +1,12 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import {
+  AutocompleteInteraction,
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  EmbedBuilder,
+} from 'discord.js';
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
@@ -30,6 +37,15 @@ interface PokeApiResponse {
   };
 }
 
+interface PokemonEntry {
+  name: string;
+  label: string;
+}
+
+const POKEMON_LIST: PokemonEntry[] = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'pokemon-list.json'), 'utf-8')
+) as PokemonEntry[];
+
 export const utilsCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('utils')
@@ -57,6 +73,7 @@ export const utilsCommand: Command = {
             .setName('query')
             .setDescription('포켓몬 영문 이름 또는 도감 번호')
             .setRequired(true)
+            .setAutocomplete(true)
         )
     )
     .addSubcommand((subcommand) =>
@@ -67,6 +84,19 @@ export const utilsCommand: Command = {
           option.setName('query').setDescription('검색할 단어').setRequired(true)
         )
     ),
+
+  async autocomplete(interaction: AutocompleteInteraction) {
+    const focusedValue = interaction.options.getFocused().toLowerCase();
+    const filtered = POKEMON_LIST.filter(
+      (poke: PokemonEntry) =>
+        poke.name.toLowerCase().includes(focusedValue) ||
+        poke.label.toLowerCase().includes(focusedValue)
+    ).slice(0, 25);
+
+    await interaction.respond(
+      filtered.map((poke: PokemonEntry) => ({ name: poke.label, value: poke.name }))
+    );
+  },
 
   async execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
@@ -185,7 +215,6 @@ export const utilsCommand: Command = {
         await interaction.deferReply();
 
         try {
-          // PokeAPI
           const response = await axios.get<PokeApiResponse>(
             `https://pokeapi.co/api/v2/pokemon/${query}`,
             {
@@ -198,8 +227,8 @@ export const utilsCommand: Command = {
           const imageUrl =
             data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default;
           const types = data.types?.map((t) => t.type.name).join(', ') || 'Unknown';
-          const height = (data.height / 10).toFixed(1); // dm to m
-          const weight = (data.weight / 10).toFixed(1); // hg to kg
+          const height = (data.height / 10).toFixed(1);
+          const weight = (data.weight / 10).toFixed(1);
 
           const embed = new EmbedBuilder()
             .setColor(Colors.INFO)
@@ -223,7 +252,7 @@ export const utilsCommand: Command = {
             await interaction.editReply({
               embeds: [
                 createErrorEmbed(
-                  `"${query}" 포켓몬을 찾을 수 없습니다. 영문 이름이나 정확한 도감 번호를 입력해 주세요.`
+                  `${rawQuery} 포켓몬을 찾을 수 없습니다. 영문 이름이나 정확한 도감 번호를 입력해 주세요.`
                 ),
               ],
             });
@@ -262,7 +291,7 @@ export const utilsCommand: Command = {
 
           if (!results || results.length === 0) {
             await interaction.editReply({
-              embeds: [createErrorEmbed(`"${query}"에 대한 검색 결과가 없습니다.`)],
+              embeds: [createErrorEmbed(`${query}에 대한 검색 결과가 없습니다.`)],
             });
             return;
           }

@@ -1,13 +1,14 @@
+/* eslint-disable no-console */
 import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
-import { infraCommand } from '../src/commands/infra/index';
-import { cdnCommand } from '../src/commands/cdn/index';
-import { galleryCommand } from '../src/commands/gallery/index';
-import { playCommand } from '../src/commands/playgrounds/index';
-import { utilsCommand } from '../src/commands/utils/index';
-import { paperclipCommand } from '../src/commands/paperclip/index';
-import { paperclipApprovalCommand } from '../src/commands/paperclip/approval';
-import { radioCommand } from '../src/commands/radio/index';
+import { infraCommand } from '../commands/infra/index';
+import { cdnCommand } from '../commands/cdn/index';
+import { galleryCommand } from '../commands/gallery/index';
+import { playCommand } from '../commands/playgrounds/index';
+import { utilsCommand } from '../commands/utils/index';
+import { paperclipCommand } from '../commands/paperclip/index';
+import { paperclipApprovalCommand } from '../commands/paperclip/approval';
+import { radioCommand } from '../commands/radio/index';
 
 dotenv.config();
 
@@ -36,7 +37,7 @@ if (!token || !clientId) {
 
 const rest = new REST({ version: '10' }).setToken(token);
 
-async function deployCommands() {
+export async function deployCommands() {
   try {
     console.log(`🚀 Started refreshing ${commands.length} application (/) commands.`);
 
@@ -58,7 +59,7 @@ async function deployCommands() {
     }
 
     console.log('\n📋 Registered commands:');
-    commands.forEach((cmd: any) => {
+    commands.forEach((cmd: { name: string; description: string }) => {
       console.log(`  - /${cmd.name}: ${cmd.description}`);
     });
   } catch (error) {
@@ -67,4 +68,6 @@ async function deployCommands() {
   }
 }
 
-deployCommands();
+if (require.main === module) {
+  void deployCommands();
+}

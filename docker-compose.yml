@@ -12,16 +12,31 @@ services:
     environment:
       - NODE_ENV=production
       - LOG_LEVEL=info
+      - LAVALINK_URL=lavalink:2333
+      - LAVALINK_PASSWORD=youshallnotpass
+      - LAVALINK_SECURE=false
     mem_limit: 512m
     mem_reservation: 256m
     cpus: 0.5
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: '10m'
+        max-file: '3'
     networks:
       - spells-network
+
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: lavalink
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=2333
+      - LAVALINK_SERVER_PASSWORD=youshallnotpass
+    networks:
+      - spells-network
+    ports:
+      - '2333:2333'
 
 networks:
   spells-network:

@@ -15,7 +15,6 @@ RUN HUSKY=0 npm ci
 
 # Copy source code
 COPY src ./src
-COPY scripts ./scripts
 
 # Build TypeScript
 RUN npm run build
@@ -37,6 +36,9 @@ COPY package*.json ./
 # Copy built files and pruned node_modules from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
+
+# Copy static assets that are not compiled by TypeScript
+COPY --from=builder /app/src/commands/utils/pokemon-list.json ./dist/commands/utils/pokemon-list.json
 
 # Create non-root user for security
 RUN groupadd -g 1001 nodejs && \

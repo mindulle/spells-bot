@@ -17,9 +17,14 @@ import { utilsCommand } from './commands/utils/index';
 import { paperclipCommand } from './commands/paperclip/index';
 import { paperclipApprovalCommand } from './commands/paperclip/approval';
 import { radioCommand } from './commands/radio/index';
+import { deployCommands } from './scripts/deploy-commands';
+
+import { Player } from 'discord-player';
 
 // Load environment variables
 dotenv.config();
+
+export let player: Player;
 
 async function main() {
   try {
@@ -46,6 +51,24 @@ async function main() {
       partials: [Partials.Message, Partials.Reaction, Partials.User],
     });
 
+    const { DefaultExtractors } = await import('@discord-player/extractor');
+    player = new Player(client);
+    await player.extractors.loadMulti(DefaultExtractors);
+
+    // Global player event to handle VOD resuming
+    player.events.on('playerStart', (queue, track) => {
+      // Use metadata to extract resumeFrom
+      const metadata = track.metadata as Record<string, unknown> | null;
+      const resumeFrom = metadata?.resumeFrom;
+      if (typeof resumeFrom === 'number') {
+        logger.info(`Resuming track ${track.title} from ${resumeFrom}ms`);
+        // Use a slight timeout to ensure the track has actually started decoding before seeking
+        setTimeout(() => {
+          queue.node.seek(resumeFrom).catch((err) => logger.error('Failed to seek', err));
+        }, 500);
+      }
+    });
+
     // Register commands
     const commands: CommandMap = new Map([
       [infraCommand.data.name, infraCommand],
@@ -65,6 +88,10 @@ async function main() {
     registerInteractionCreateEvent(client, commands);
     registerMessageCreateEvent(client);
     registerMessageReactionAddEvent(client);
+
+    // Auto-deploy commands to Discord API
+    logger.info('Auto-deploying slash commands to Discord...');
+    await deployCommands();
 
     // Login to Discord
     await client.login(token);

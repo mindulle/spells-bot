@@ -57,6 +57,17 @@ export const paperclipCommand: Command = {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName('상세')
+        .setDescription('페이퍼클립 이슈의 상세 내용을 조회합니다.')
+        .addStringOption((option) =>
+          option
+            .setName('이슈id')
+            .setDescription('상세 내용을 확인할 이슈 ID를 입력하세요.')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName('코멘트')
         .setDescription('페이퍼클립 이슈에 코멘트를 추가합니다.')
         .addStringOption((option) =>
@@ -174,6 +185,64 @@ export const paperclipCommand: Command = {
         logger.error('Error in /이슈 조회 command:', error);
         await interaction.editReply({
           embeds: [createErrorEmbed('이슈 목록을 불러오는 중 서버 통신 오류가 발생했습니다.')],
+        });
+      }
+    } else if (subcommand === '상세') {
+      const issueId = interaction.options.getString('이슈id', true);
+
+      if (!process.env.PAPERCLIP_API_TOKEN) {
+        await interaction.reply({
+          embeds: [createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다.')],
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await interaction.deferReply();
+
+      try {
+        const issue = await PaperclipService.getIssue(issueId);
+
+        let statusEmoji = '⚪';
+        if (issue.status === 'done' || issue.status === 'completed') statusEmoji = '✅';
+        else if (issue.status === 'in_progress') statusEmoji = '🏃';
+        else if (issue.status === 'blocked') statusEmoji = '🚫';
+        else if (issue.status === 'cancelled') statusEmoji = '❌';
+
+        const embed = new EmbedBuilder()
+          .setColor(Colors.INFO)
+          .setTitle(`${statusEmoji} ${issue.title || '제목 없음'}`)
+          .setDescription(
+            issue.description ? issue.description.substring(0, 4000) : '상세 내용이 없습니다.'
+          )
+          .addFields(
+            { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
+            { name: '상태', value: issue.status || 'N/A', inline: true }
+          )
+          .setFooter({ text: 'Paperclip 연동' })
+          .setTimestamp();
+
+        // Paperclip API에서 createdAt, updatedAt 등의 추가 정보가 있다면 필드 추가
+        if (issue.createdAt) {
+          embed.addFields({
+            name: '생성일',
+            value: new Date(String(issue.createdAt)).toLocaleDateString(),
+            inline: true,
+          });
+        }
+        if (issue.priority) {
+          embed.addFields({ name: '우선순위', value: String(issue.priority), inline: true });
+        }
+
+        await interaction.editReply({ embeds: [embed] });
+      } catch (error) {
+        logger.error('Error in /이슈 상세 command:', error);
+        await interaction.editReply({
+          embeds: [
+            createErrorEmbed(
+              '이슈 상세 정보를 불러오는 중 오류가 발생했습니다. 이슈 ID를 다시 확인해주세요.'
+            ),
+          ],
         });
       }
     } else if (subcommand === '코멘트') {

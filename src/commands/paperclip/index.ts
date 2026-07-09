@@ -76,11 +76,7 @@ export const paperclipCommand: Command = {
     if (subcommand === '생성') {
       const title = interaction.options.getString('제목', true);
       const description = interaction.options.getString('내용') || '상세 내용 없음';
-      const companyChoice = interaction.options.getString('회사') || 'mindulle';
-
-      const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
-      const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
-      const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
+      const companyId = PaperclipService.getCompanyIdFromInteraction(interaction);
 
       if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
         await interaction.reply({
@@ -122,11 +118,7 @@ export const paperclipCommand: Command = {
       }
     } else if (subcommand === '조회') {
       const limit = interaction.options.getInteger('개수') || 5;
-      const companyChoice = interaction.options.getString('회사') || 'mindulle';
-
-      const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
-      const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
-      const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
+      const companyId = PaperclipService.getCompanyIdFromInteraction(interaction);
 
       if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
         await interaction.reply({

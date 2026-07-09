@@ -56,11 +56,7 @@ export const paperclipApprovalCommand: Command = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === '대기') {
-      const companyChoice = interaction.options.getString('회사') || 'mindulle';
-
-      const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
-      const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
-      const companyId = companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
+      const companyId = PaperclipService.getCompanyIdFromInteraction(interaction);
 
       if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
         await interaction.reply({
@@ -98,9 +94,16 @@ export const paperclipApprovalCommand: Command = {
           .setTimestamp();
 
         let description = '';
-        approvals.forEach((approval) => {
+        const MAX_DISPLAY = 15;
+        const displayApprovals = approvals.slice(0, MAX_DISPLAY);
+
+        displayApprovals.forEach((approval) => {
           description += `⏳ **[${approval.id?.substring(0, 8) || 'N/A'}]** ${approval.title || '제목 없음'}\n`;
         });
+
+        if (approvals.length > MAX_DISPLAY) {
+          description += `\n*... 외 ${approvals.length - MAX_DISPLAY}건의 결재 대기가 더 있습니다.*`;
+        }
 
         embed.setDescription(description || '결재를 불러올 수 없습니다.');
 

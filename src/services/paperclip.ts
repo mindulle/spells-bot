@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
+import type { ChatInputCommandInteraction } from 'discord.js';
 
 export interface PaperclipIssueResponse {
   id: string;
@@ -10,6 +11,17 @@ export interface PaperclipIssueResponse {
 }
 
 export class PaperclipService {
+  /**
+   * 디스코드 인터랙션에서 회사 ID를 추출합니다.
+   * @param interaction 디스코드 인터랙션 객체
+   */
+  static getCompanyIdFromInteraction(interaction: ChatInputCommandInteraction): string | undefined {
+    const companyChoice = interaction.options.getString('회사') || 'mindulle';
+    const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
+    const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
+    return companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
+  }
+
   /**
    * 새로운 이슈를 생성합니다.
    * @param companyId 대상 회사 ID

@@ -14,6 +14,8 @@ export function registerReadyEvent(client: Client): void {
     });
 
     // Auto-deploy commands dynamically to all joined guilds to prevent duplication
-    void deployCommands(Array.from(readyClient.guilds.cache.keys()));
+    deployCommands(Array.from(readyClient.guilds.cache.keys())).catch((err) => {
+      logger.error('Failed to auto-deploy commands:', err);
+    });
   });
 }

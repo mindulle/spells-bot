@@ -78,10 +78,13 @@ export async function deployCommands(guildIds?: string[]) {
     });
   } catch (error) {
     console.error('❌ Error deploying commands:', error);
-    process.exit(1);
+    throw error;
   }
 }
 
 if (require.main === module) {
-  void deployCommands();
+  deployCommands().catch((error) => {
+    console.error('❌ CLI deployment failed:', error);
+    process.exit(1);
+  });
 }

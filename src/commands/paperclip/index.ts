@@ -75,6 +75,7 @@ export const paperclipCommand: Command = {
             .addChoices(
               { name: '모두 보기 (기본)', value: 'all' },
               { name: '진행 중', value: 'in_progress' },
+              { name: '리뷰 대기', value: 'in_review' },
               { name: '백로그', value: 'backlog' },
               { name: '할 일', value: 'todo' },
               { name: '완료됨', value: 'done' },
@@ -236,6 +237,7 @@ export const paperclipCommand: Command = {
         const statusLabelMap: Record<string, string> = {
           all: '전체',
           in_progress: '진행 중',
+          in_review: '리뷰 대기',
           backlog: '백로그',
           todo: '할 일',
           done: '완료됨',
@@ -392,18 +394,31 @@ export const paperclipCommand: Command = {
       try {
         const issue = await PaperclipService.updateIssue(issueId, { status });
 
-        // 상태에 따른 이모지 표시
+        // 상태에 따른 이모지 및 한글 라벨 표시
+        const statusLabelMap: Record<string, string> = {
+          todo: '할 일 (todo)',
+          in_progress: '진행 중 (in_progress)',
+          in_review: '리뷰 대기 (in_review)',
+          backlog: '백로그 (backlog)',
+          done: '완료됨 (done)',
+          completed: '완료됨 (completed)',
+          blocked: '차단됨 (blocked)',
+          cancelled: '취소됨 (cancelled)',
+        };
+
         let statusEmoji = '⚪';
         if (issue.status === 'done' || issue.status === 'completed') statusEmoji = '✅';
         else if (issue.status === 'in_progress') statusEmoji = '🏃';
         else if (issue.status === 'blocked') statusEmoji = '🚫';
         else if (issue.status === 'cancelled') statusEmoji = '❌';
 
+        const displayStatus = statusLabelMap[issue.status] || issue.status || status;
+
         const embed = new EmbedBuilder()
           .setColor(Colors.SUCCESS)
           .setTitle(`${statusEmoji} 이슈 상태가 변경되었습니다.`)
           .setDescription(`**[${issue.identifier || issue.id?.substring(0, 8)}]** ${issue.title}`)
-          .addFields({ name: '변경된 상태', value: issue.status || status, inline: true })
+          .addFields({ name: '변경된 상태', value: displayStatus, inline: true })
           .setFooter({ text: 'Paperclip 연동' })
           .setTimestamp();
 

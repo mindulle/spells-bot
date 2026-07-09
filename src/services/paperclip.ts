@@ -98,7 +98,7 @@ export class PaperclipService {
         params.status = status;
       } else {
         // API 기본값이 'todo,in_progress,backlog' 이므로 'all'을 요청하면 완료/취소 등 모든 상태를 포함하도록 명시
-        params.status = 'todo,in_progress,blocked,backlog,done,cancelled';
+        params.status = 'todo,in_progress,in_review,blocked,backlog,done,cancelled';
       }
 
       // NOTE: 실제 페이퍼클립 API 규격에 맞춰 수정 필요

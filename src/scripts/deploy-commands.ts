@@ -9,6 +9,7 @@ import { utilsCommand } from '../commands/utils/index';
 import { paperclipCommand } from '../commands/paperclip/index';
 import { paperclipApprovalCommand } from '../commands/paperclip/approval';
 import { scheduleCommand } from '../commands/notion/index';
+import { ledgerCommand } from '../commands/notion/ledger';
 import { radioCommand } from '../commands/radio/index';
 
 dotenv.config();
@@ -22,6 +23,7 @@ const commands = [
   paperclipCommand.data.toJSON(),
   paperclipApprovalCommand.data.toJSON(),
   scheduleCommand.data.toJSON(),
+  ledgerCommand.data.toJSON(),
   radioCommand.data.toJSON(),
 ];
 

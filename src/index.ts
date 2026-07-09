@@ -17,6 +17,7 @@ import { utilsCommand } from './commands/utils/index';
 import { paperclipCommand } from './commands/paperclip/index';
 import { paperclipApprovalCommand } from './commands/paperclip/approval';
 import { scheduleCommand } from './commands/notion/index';
+import { ledgerCommand } from './commands/notion/ledger';
 import { radioCommand } from './commands/radio/index';
 import { deployCommands } from './scripts/deploy-commands';
 
@@ -80,6 +81,7 @@ async function main() {
       [paperclipCommand.data.name, paperclipCommand],
       [paperclipApprovalCommand.data.name, paperclipApprovalCommand],
       [scheduleCommand.data.name, scheduleCommand],
+      [ledgerCommand.data.name, ledgerCommand],
       [radioCommand.data.name, radioCommand],
     ]);
 

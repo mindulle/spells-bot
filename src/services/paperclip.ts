@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
+import type { ChatInputCommandInteraction } from 'discord.js';
 
 export interface PaperclipIssueResponse {
   id: string;
@@ -10,6 +11,17 @@ export interface PaperclipIssueResponse {
 }
 
 export class PaperclipService {
+  /**
+   * 디스코드 인터랙션에서 회사 ID를 추출합니다.
+   * @param interaction 디스코드 인터랙션 객체
+   */
+  static getCompanyIdFromInteraction(interaction: ChatInputCommandInteraction): string | undefined {
+    const companyChoice = interaction.options.getString('회사') || 'mindulle';
+    const defaultCompanyId = process.env.PAPERCLIP_COMPANY_ID_MINDULLE;
+    const lifeCompanyId = process.env.PAPERCLIP_COMPANY_ID_LIFE;
+    return companyChoice === 'life' ? lifeCompanyId : defaultCompanyId;
+  }
+
   /**
    * 새로운 이슈를 생성합니다.
    * @param companyId 대상 회사 ID
@@ -97,6 +109,167 @@ export class PaperclipService {
         errorMessage = error.message;
       }
       logger.error(`Failed to fetch Paperclip issues. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
+   * 결재 대기 목록을 조회합니다.
+   * @param companyId 대상 회사 ID
+   * @param status 상태 (기본: pending)
+   */
+  static async listApprovals(
+    companyId: string,
+    status: string = 'pending'
+  ): Promise<PaperclipIssueResponse[]> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token || !companyId) {
+      throw new Error('PAPERCLIP_API_TOKEN or COMPANY_ID is not configured.');
+    }
+
+    try {
+      const response = await axios.get<PaperclipIssueResponse[]>(
+        `${apiUrl}/companies/${companyId}/approvals`,
+        {
+          params: { status },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to fetch Paperclip approvals. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
+   * 결재를 승인합니다.
+   * @param approvalId 결재 ID
+   * @param comment 승인 코멘트 (선택사항)
+   */
+  static async approve(approvalId: string, comment: string = ''): Promise<Record<string, unknown>> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      const body: Record<string, string> = {};
+      if (comment) body.comment = comment;
+
+      const response = await axios.post<Record<string, unknown>>(
+        `${apiUrl}/approvals/${approvalId}/approve`,
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to approve. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
+   * 결재를 거절합니다.
+   * @param approvalId 결재 ID
+   * @param comment 거절 코멘트 (선택사항이나 권장됨)
+   */
+  static async reject(approvalId: string, comment: string = ''): Promise<Record<string, unknown>> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      const body: Record<string, string> = {};
+      if (comment) body.comment = comment;
+
+      const response = await axios.post<Record<string, unknown>>(
+        `${apiUrl}/approvals/${approvalId}/reject`,
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to reject. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
+   * 이슈에 코멘트를 추가합니다.
+   * @param issueId 이슈 ID
+   * @param body 코멘트 내용
+   */
+  static async commentOnIssue(issueId: string, body: string): Promise<Record<string, unknown>> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      const response = await axios.post<Record<string, unknown>>(
+        `${apiUrl}/issues/${issueId}/comments`,
+        { body },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to add issue comment. Reason: ${errorMessage}`);
       throw new Error('Paperclip API Error');
     }
   }

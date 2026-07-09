@@ -5,12 +5,11 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import axios from 'axios';
-import * as fs from 'fs';
-import * as path from 'path';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
 import { DEFAULT_USER_AGENT } from '../../utils/constants';
+import POKEMON_LIST_JSON from './pokemon-list.json';
 
 interface WikiSearchResponse {
   query?: {
@@ -42,9 +41,10 @@ interface PokemonEntry {
   label: string;
 }
 
-const POKEMON_LIST: PokemonEntry[] = JSON.parse(
-  fs.readFileSync(path.join(__dirname, 'pokemon-list.json'), 'utf-8')
-) as PokemonEntry[];
+const POKEMON_LIST: PokemonEntry[] = POKEMON_LIST_JSON as PokemonEntry[];
+// JSON.parse(
+// fs.readFileSync(path.join(__dirname, 'pokemon-list.json'), 'utf-8')
+// ) as PokemonEntry[];
 
 export const utilsCommand: Command = {
   data: new SlashCommandBuilder()

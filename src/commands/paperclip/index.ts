@@ -175,7 +175,8 @@ export const paperclipCommand: Command = {
           else if (issue.status === 'blocked') statusEmoji = '🚫';
           else if (issue.status === 'cancelled') statusEmoji = '❌';
 
-          description += `${statusEmoji} **[${issue.id?.substring(0, 8) || 'N/A'}]** ${issue.title || '제목 없음'}\n`;
+          const displayId = issue.identifier || issue.id?.substring(0, 8) || 'N/A';
+          description += `${statusEmoji} **[${displayId}]** ${issue.title || '제목 없음'}\n`;
         });
 
         embed.setDescription(description || '이슈를 불러올 수 없습니다.');

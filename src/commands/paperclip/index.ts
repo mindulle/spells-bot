@@ -54,6 +54,20 @@ export const paperclipCommand: Command = {
               { name: 'LIFE (개인)', value: 'life' }
             )
         )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('코멘트')
+        .setDescription('페이퍼클립 이슈에 코멘트를 추가합니다.')
+        .addStringOption((option) =>
+          option
+            .setName('이슈id')
+            .setDescription('코멘트를 남길 이슈 ID를 입력하세요.')
+            .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option.setName('내용').setDescription('코멘트 내용을 입력하세요.').setRequired(true)
+        )
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -168,6 +182,44 @@ export const paperclipCommand: Command = {
         logger.error('Error in /이슈 조회 command:', error);
         await interaction.editReply({
           embeds: [createErrorEmbed('이슈 목록을 불러오는 중 서버 통신 오류가 발생했습니다.')],
+        });
+      }
+    } else if (subcommand === '코멘트') {
+      const issueId = interaction.options.getString('이슈id', true);
+      const content = interaction.options.getString('내용', true);
+
+      if (!process.env.PAPERCLIP_API_TOKEN) {
+        await interaction.reply({
+          embeds: [createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다.')],
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await interaction.deferReply();
+
+      try {
+        await PaperclipService.commentOnIssue(issueId, content);
+
+        const embed = new EmbedBuilder()
+          .setColor(Colors.SUCCESS)
+          .setTitle('✅ 이슈 코멘트가 등록되었습니다.')
+          .addFields(
+            { name: '이슈 ID', value: issueId, inline: true },
+            { name: '코멘트', value: content, inline: false }
+          )
+          .setFooter({ text: 'Paperclip 연동' })
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+      } catch (error) {
+        logger.error('Error in /이슈 코멘트 command:', error);
+        await interaction.editReply({
+          embeds: [
+            createErrorEmbed(
+              '이슈에 코멘트를 등록하는 중 서버 통신 오류가 발생했습니다. 이슈 ID를 확인해주세요.'
+            ),
+          ],
         });
       }
     }

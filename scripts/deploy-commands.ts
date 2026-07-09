@@ -6,6 +6,7 @@ import { galleryCommand } from '../src/commands/gallery/index';
 import { playCommand } from '../src/commands/playgrounds/index';
 import { utilsCommand } from '../src/commands/utils/index';
 import { paperclipCommand } from '../src/commands/paperclip/index';
+import { paperclipApprovalCommand } from '../src/commands/paperclip/approval';
 import { radioCommand } from '../src/commands/radio/index';
 
 dotenv.config();
@@ -17,6 +18,7 @@ const commands = [
   playCommand.data.toJSON(),
   utilsCommand.data.toJSON(),
   paperclipCommand.data.toJSON(),
+  paperclipApprovalCommand.data.toJSON(),
   radioCommand.data.toJSON(),
 ];
 

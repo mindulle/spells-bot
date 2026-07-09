@@ -15,6 +15,7 @@ import { galleryCommand } from './commands/gallery/index';
 import { playCommand } from './commands/playgrounds/index';
 import { utilsCommand } from './commands/utils/index';
 import { paperclipCommand } from './commands/paperclip/index';
+import { paperclipApprovalCommand } from './commands/paperclip/approval';
 import { radioCommand } from './commands/radio/index';
 
 // Load environment variables
@@ -53,6 +54,7 @@ async function main() {
       [playCommand.data.name, playCommand],
       [utilsCommand.data.name, utilsCommand],
       [paperclipCommand.data.name, paperclipCommand],
+      [paperclipApprovalCommand.data.name, paperclipApprovalCommand],
       [radioCommand.data.name, radioCommand],
     ]);
 

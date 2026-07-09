@@ -237,6 +237,42 @@ export class PaperclipService {
   }
 
   /**
+   * 이슈 상세 정보를 조회합니다.
+   * @param issueId 조회할 이슈 ID
+   */
+  static async getIssue(issueId: string): Promise<PaperclipIssueResponse> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      const response = await axios.get<PaperclipIssueResponse>(
+        `${apiUrl}/issues/${encodeURIComponent(issueId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to fetch Paperclip issue detail. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
    * 이슈에 코멘트를 추가합니다.
    * @param issueId 이슈 ID
    * @param body 코멘트 내용

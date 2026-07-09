@@ -4,6 +4,14 @@ import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
 import { PaperclipService } from '../../services/paperclip';
 
+const AGENTS = {
+  '4ec5a12a-49bf-4047-8207-96a4a0723423': 'Nuri (CTO)',
+  '416efb4b-c17d-4397-8367-8c21681df4ce': 'Money (PM)',
+  'fe04b047-99f7-46cd-af74-94000c5ebe3f': 'Jenny (Designer)',
+  '9b25dc6d-a677-449d-8420-6c07476d7bb8': 'Maru (Librarian)',
+  'cc885508-8981-4930-9b70-4f2e1ffb1e6b': 'CEO',
+} as const;
+
 export const paperclipAgentCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('에이전트')
@@ -19,13 +27,7 @@ export const paperclipAgentCommand: Command = {
             .setName('대상')
             .setDescription('호출할 에이전트를 선택하세요.')
             .setRequired(true)
-            .addChoices(
-              { name: 'Nuri (CTO)', value: '4ec5a12a-49bf-4047-8207-96a4a0723423' },
-              { name: 'Money (PM)', value: '416efb4b-c17d-4397-8367-8c21681df4ce' },
-              { name: 'Jenny (Designer)', value: 'fe04b047-99f7-46cd-af74-94000c5ebe3f' },
-              { name: 'Maru (Librarian)', value: '9b25dc6d-a677-449d-8420-6c07476d7bb8' },
-              { name: 'CEO', value: 'cc885508-8981-4930-9b70-4f2e1ffb1e6b' }
-            )
+            .addChoices(...Object.entries(AGENTS).map(([value, name]) => ({ name, value })))
         )
     ),
 
@@ -48,14 +50,7 @@ export const paperclipAgentCommand: Command = {
       try {
         await PaperclipService.invokeAgentHeartbeat(agentId);
 
-        const agentNameMap: Record<string, string> = {
-          '4ec5a12a-49bf-4047-8207-96a4a0723423': 'Nuri (CTO)',
-          '416efb4b-c17d-4397-8367-8c21681df4ce': 'Money (PM)',
-          'fe04b047-99f7-46cd-af74-94000c5ebe3f': 'Jenny (Designer)',
-          '9b25dc6d-a677-449d-8420-6c07476d7bb8': 'Maru (Librarian)',
-          'cc885508-8981-4930-9b70-4f2e1ffb1e6b': 'CEO',
-        };
-        const displayAgentName = agentNameMap[agentId] || agentId;
+        const displayAgentName = AGENTS[agentId as keyof typeof AGENTS] || agentId;
 
         const embed = new EmbedBuilder()
           .setColor(Colors.SUCCESS)

@@ -4,6 +4,19 @@ import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
 import { PaperclipService } from '../../services/paperclip';
 
+const AGENTS = [
+  { name: 'Nuri (CTO)', value: '4ec5a12a-49bf-4047-8207-96a4a0723423' },
+  { name: 'Money (PM)', value: '416efb4b-c17d-4397-8367-8c21681df4ce' },
+  { name: 'Jenny (Designer)', value: 'fe04b047-99f7-46cd-af74-94000c5ebe3f' },
+  { name: 'Maru (Librarian)', value: '9b25dc6d-a677-449d-8420-6c07476d7bb8' },
+  { name: 'CEO', value: 'cc885508-8981-4930-9b70-4f2e1ffb1e6b' },
+] as const;
+
+const AGENT_NAME_MAP = Object.fromEntries(AGENTS.map((a) => [a.value, a.name])) as Record<
+  string,
+  string
+>;
+
 export const paperclipCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('이슈')
@@ -96,14 +109,7 @@ export const paperclipCommand: Command = {
             .setName('에이전트')
             .setDescription('이슈를 담당할 에이전트를 선택하세요.')
             .setRequired(true)
-            .addChoices(
-              { name: 'Nuri (CTO)', value: '4ec5a12a-49bf-4047-8207-96a4a0723423' },
-              { name: 'Money (PM)', value: '416efb4b-c17d-4397-8367-8c21681df4ce' },
-              { name: 'Jenny (Designer)', value: 'fe04b047-99f7-46cd-af74-94000c5ebe3f' },
-              { name: 'Maru (Librarian)', value: '9b25dc6d-a677-449d-8420-6c07476d7bb8' },
-              { name: 'CEO', value: 'cc885508-8981-4930-9b70-4f2e1ffb1e6b' },
-              { name: '할당 해제 (Unassign)', value: 'unassign' }
-            )
+            .addChoices(...AGENTS, { name: '할당 해제 (Unassign)', value: 'unassign' })
         )
     )
     .addSubcommand((subcommand) =>
@@ -321,15 +327,8 @@ export const paperclipCommand: Command = {
         const assigneeAgentId = agentId === 'unassign' ? null : agentId;
         const issue = await PaperclipService.updateIssue(issueId, { assigneeAgentId });
 
-        const agentNameMap: Record<string, string> = {
-          '4ec5a12a-49bf-4047-8207-96a4a0723423': 'Nuri (CTO)',
-          '416efb4b-c17d-4397-8367-8c21681df4ce': 'Money (PM)',
-          'fe04b047-99f7-46cd-af74-94000c5ebe3f': 'Jenny (Designer)',
-          '9b25dc6d-a677-449d-8420-6c07476d7bb8': 'Maru (Librarian)',
-          'cc885508-8981-4930-9b70-4f2e1ffb1e6b': 'CEO',
-        };
         const displayAgentName =
-          agentId === 'unassign' ? '할당 해제됨 (Unassigned)' : agentNameMap[agentId] || agentId;
+          agentId === 'unassign' ? '할당 해제됨 (Unassigned)' : AGENT_NAME_MAP[agentId] || agentId;
 
         const embed = new EmbedBuilder()
           .setColor(Colors.SUCCESS)

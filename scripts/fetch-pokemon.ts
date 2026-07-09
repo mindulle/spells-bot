@@ -13,7 +13,11 @@ async function fetchAllPokemon() {
     label: `${p.name.charAt(0).toUpperCase() + p.name.slice(1)}`
   }));
   
-  fs.writeFileSync('./src/commands/utils/pokemon-list.json', JSON.stringify(mapping, null, 2));
+  const dir = './src/commands/utils';
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(`${dir}/pokemon-list.json`, JSON.stringify(mapping, null, 2));
   console.log('Successfully saved pokemon-list.json');
 }
 

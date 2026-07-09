@@ -8,6 +8,7 @@ import { playCommand } from '../commands/playgrounds/index';
 import { utilsCommand } from '../commands/utils/index';
 import { paperclipCommand } from '../commands/paperclip/index';
 import { paperclipApprovalCommand } from '../commands/paperclip/approval';
+import { paperclipAgentCommand } from '../commands/paperclip/agent';
 import { scheduleCommand } from '../commands/notion/index';
 import { ledgerCommand } from '../commands/notion/ledger';
 import { radioCommand } from '../commands/radio/index';
@@ -22,6 +23,7 @@ const commands = [
   utilsCommand.data.toJSON(),
   paperclipCommand.data.toJSON(),
   paperclipApprovalCommand.data.toJSON(),
+  paperclipAgentCommand.data.toJSON(),
   scheduleCommand.data.toJSON(),
   ledgerCommand.data.toJSON(),
   radioCommand.data.toJSON(),

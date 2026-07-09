@@ -14,7 +14,7 @@ import {
 } from 'discord.js';
 import axios from 'axios';
 import Parser from 'rss-parser';
-import { Track } from 'discord-player';
+import { Track, GuildQueue } from 'discord-player';
 import { player } from '../../index';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
@@ -59,26 +59,43 @@ function attachPlayerControlsCollector(message: Message, guildId: string, userId
 
   collector.on('collect', (i: ButtonInteraction) => {
     void (async () => {
-      if (i.user.id !== userId) {
-        await i.reply({ content: '명령어를 입력한 사용자만 조작할 수 있습니다.', ephemeral: true });
-        return;
-      }
-
-      const currentQueue = player.nodes.get(guildId);
-      if (!currentQueue) {
-        await i.reply({ content: '현재 재생 중인 라디오가 없습니다.', ephemeral: true });
+      // 1. 디스코드 응답 지연(Timeout)을 우회하기 위해 가장 먼저 deferUpdate 호출
+      try {
+        await i.deferUpdate();
+      } catch (e) {
+        logger.warn('Failed to defer update, interaction timed out.', e);
         return;
       }
 
       try {
-        await i.deferUpdate();
+        if (i.user.id !== userId) {
+          await i.followUp({
+            content: '명령어를 입력한 사용자만 조작할 수 있습니다.',
+            ephemeral: true,
+          });
+          return;
+        }
+
+        const currentQueue = player.nodes.get(guildId);
+        if (!currentQueue) {
+          await i.followUp({ content: '현재 재생 중인 라디오가 없습니다.', ephemeral: true });
+          return;
+        }
 
         if (i.customId === 'radio_control_pause') {
           currentQueue.node.setPaused(true);
           await i.followUp({ content: '⏸️ 라디오를 일시정지했습니다.', ephemeral: true });
         } else if (i.customId === 'radio_control_resume') {
-          currentQueue.node.setPaused(false);
-          await i.followUp({ content: '▶️ 라디오 재생을 계속합니다.', ephemeral: true });
+          // 2. Resume 버퍼링 지연을 대비하여 상태 체크 추가
+          const success = currentQueue.node.setPaused(false);
+          if (success !== false) {
+            await i.followUp({ content: '▶️ 라디오 재생을 계속합니다.', ephemeral: true });
+          } else {
+            await i.followUp({
+              content: '⚠️ 라디오 재생 재개에 실패했거나 지연되고 있습니다...',
+              ephemeral: true,
+            });
+          }
         } else if (i.customId === 'radio_control_stop') {
           currentQueue.delete();
           await i.editReply({ components: [] }).catch(() => {});
@@ -97,6 +114,20 @@ function attachPlayerControlsCollector(message: Message, guildId: string, userId
   collector.on('end', () => {
     void message.edit({ components: [] }).catch(() => {});
   });
+
+  // 3. 큐가 파괴(Destroy/Empty)되거나 외부 요인으로 끊기면 버튼 상태 동기화 (Cleanup)
+  const cleanupListener = (q: GuildQueue) => {
+    if (q && q.guild && q.guild.id === guildId) {
+      if (!collector.ended) collector.stop();
+      player.events.removeListener('emptyQueue', cleanupListener);
+      player.events.removeListener('disconnect', cleanupListener);
+      player.events.removeListener('playerError', cleanupListener);
+    }
+  };
+
+  player.events.on('emptyQueue', cleanupListener);
+  player.events.on('disconnect', cleanupListener);
+  player.events.on('playerError', cleanupListener);
 }
 
 export const radioCommand: Command = {

@@ -363,4 +363,41 @@ export class PaperclipService {
       throw new Error('Paperclip API Error');
     }
   }
+
+  /**
+   * 에이전트를 강제로 깨워(Heartbeat) 작업을 시작하게 합니다.
+   * @param agentId 에이전트 ID
+   */
+  static async invokeAgentHeartbeat(agentId: string): Promise<Record<string, unknown>> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      const response = await axios.post<Record<string, unknown>>(
+        `${apiUrl}/agents/${agentId}/heartbeat/invoke`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to invoke agent heartbeat. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
 }

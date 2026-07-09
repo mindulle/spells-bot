@@ -114,6 +114,32 @@ export const paperclipCommand: Command = {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName('상태')
+        .setDescription('페이퍼클립 이슈의 진행 상태를 변경합니다.')
+        .addStringOption((option) =>
+          option
+            .setName('이슈id')
+            .setDescription('상태를 변경할 이슈 ID (예: CEO-335)를 입력하세요.')
+            .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('상태')
+            .setDescription('변경할 상태를 선택하세요.')
+            .setRequired(true)
+            .addChoices(
+              { name: '할 일 (todo)', value: 'todo' },
+              { name: '진행 중 (in_progress)', value: 'in_progress' },
+              { name: '리뷰 대기 (in_review)', value: 'in_review' },
+              { name: '백로그 (backlog)', value: 'backlog' },
+              { name: '완료됨 (done)', value: 'done' },
+              { name: '차단됨 (blocked)', value: 'blocked' },
+              { name: '취소됨 (cancelled)', value: 'cancelled' }
+            )
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName('코멘트')
         .setDescription('페이퍼클립 이슈에 코멘트를 추가합니다.')
         .addStringOption((option) =>
@@ -345,6 +371,49 @@ export const paperclipCommand: Command = {
           embeds: [
             createErrorEmbed(
               '이슈를 할당하는 중 오류가 발생했습니다. 이슈 ID를 다시 확인해주세요.'
+            ),
+          ],
+        });
+      }
+    } else if (subcommand === '상태') {
+      const issueId = interaction.options.getString('이슈id', true);
+      const status = interaction.options.getString('상태', true);
+
+      if (!process.env.PAPERCLIP_API_TOKEN) {
+        await interaction.reply({
+          embeds: [createErrorEmbed('현재 페이퍼클립 연동이 비활성화되어 있습니다.')],
+          ephemeral: true,
+        });
+        return;
+      }
+
+      await interaction.deferReply();
+
+      try {
+        const issue = await PaperclipService.updateIssue(issueId, { status });
+
+        // 상태에 따른 이모지 표시
+        let statusEmoji = '⚪';
+        if (issue.status === 'done' || issue.status === 'completed') statusEmoji = '✅';
+        else if (issue.status === 'in_progress') statusEmoji = '🏃';
+        else if (issue.status === 'blocked') statusEmoji = '🚫';
+        else if (issue.status === 'cancelled') statusEmoji = '❌';
+
+        const embed = new EmbedBuilder()
+          .setColor(Colors.SUCCESS)
+          .setTitle(`${statusEmoji} 이슈 상태가 변경되었습니다.`)
+          .setDescription(`**[${issue.identifier || issue.id?.substring(0, 8)}]** ${issue.title}`)
+          .addFields({ name: '변경된 상태', value: issue.status || status, inline: true })
+          .setFooter({ text: 'Paperclip 연동' })
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+      } catch (error) {
+        logger.error('Error in /이슈 상태 command:', error);
+        await interaction.editReply({
+          embeds: [
+            createErrorEmbed(
+              '이슈 상태를 변경하는 중 오류가 발생했습니다. 이슈 ID를 다시 확인해주세요.'
             ),
           ],
         });

@@ -43,25 +43,33 @@ if (!token || !clientId) {
 
 const rest = new REST({ version: '10' }).setToken(token);
 
-export async function deployCommands() {
+export async function deployCommands(guildIds?: string[]) {
   try {
     console.log(`🚀 Started refreshing ${commands.length} application (/) commands.`);
 
-    if (guildId) {
-      // Deploy to specific guild (faster for development)
-      console.log(`📍 Deploying to guild: ${guildId}`);
-      await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-        body: commands,
-      });
-      console.log('✅ Successfully registered guild commands!');
+    // 1. 항상 글로벌 커맨드를 초기화하여 중복(스코프 충돌) 방지
+    try {
+      console.log('🧹 Clearing global commands to prevent duplication...');
+      await rest.put(Routes.applicationCommands(clientId), { body: [] });
+    } catch (e) {
+      console.error('⚠️ Failed to clear global commands:', e);
+    }
+
+    // 2. 길드별로 커맨드 등록 (즉시 반영됨)
+    const targetGuilds = guildIds && guildIds.length > 0 ? guildIds : guildId ? [guildId] : [];
+
+    if (targetGuilds.length > 0) {
+      for (const id of targetGuilds) {
+        console.log(`📍 Deploying to guild: ${id}`);
+        await rest.put(Routes.applicationGuildCommands(clientId, id), {
+          body: commands,
+        });
+      }
+      console.log(`✅ Successfully registered commands to ${targetGuilds.length} guild(s)!`);
     } else {
-      // Deploy globally (takes up to 1 hour to propagate)
-      console.log('🌍 Deploying globally...');
-      await rest.put(Routes.applicationCommands(clientId), {
-        body: commands,
-      });
-      console.log('✅ Successfully registered global commands!');
-      console.log('⚠️  Note: Global commands may take up to 1 hour to appear.');
+      console.log('⚠️ No guild IDs provided and DISCORD_GUILD_ID is not set.');
+      console.log('⚠️ Commands are cleared globally but not registered anywhere.');
+      console.log('⚠️ Please set DISCORD_GUILD_ID or pass guild IDs to deploy.');
     }
 
     console.log('\n📋 Registered commands:');

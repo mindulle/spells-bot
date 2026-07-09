@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
-import { Client } from '@notionhq/client';
+import { Client, isFullPage } from '@notionhq/client';
 import { logger } from '../utils/logger';
 
 export interface ScheduleItem {
@@ -20,12 +19,12 @@ export class NotionService {
     return new Client({ auth: token });
   }
 
-  private static getDatabaseId(): string {
-    const dbId = process.env.NOTION_SCHEDULER_DB_ID;
-    if (!dbId) {
-      throw new Error('NOTION_SCHEDULER_DB_ID is not configured.');
+  private static getDataSourceId(): string {
+    const dataSourceId = process.env.NOTION_SCHEDULER_DATA_SOURCE_ID;
+    if (!dataSourceId) {
+      throw new Error('NOTION_SCHEDULER_DATA_SOURCE_ID is not configured.');
     }
-    return dbId;
+    return dataSourceId;
   }
 
   /**
@@ -33,7 +32,7 @@ export class NotionService {
    */
   static async getTodaySchedules(): Promise<ScheduleItem[]> {
     const notion = this.getClient();
-    const databaseId = this.getDatabaseId();
+    const dataSourceId = this.getDataSourceId();
 
     const today = new Date();
     // KST 기준으로 오늘 날짜 YYYY-MM-DD 구하기
@@ -43,7 +42,7 @@ export class NotionService {
 
     try {
       const response = await notion.dataSources.query({
-        data_source_id: databaseId,
+        data_source_id: dataSourceId,
         filter: {
           property: 'Date',
           date: {
@@ -58,13 +57,33 @@ export class NotionService {
         ],
       });
 
-      return response.results.map((page: any) => {
+      return response.results.filter(isFullPage).map((page) => {
         const props = page.properties;
-        const title = props['이름']?.title?.[0]?.plain_text || '제목 없음';
-        const date = props['Date']?.date?.start || null;
-        const category = props['카테고리']?.select?.name || null;
-        const location = props['Location']?.rich_text?.[0]?.plain_text || null;
-        const isDone = props['Done']?.checkbox || false;
+
+        let title = '제목 없음';
+        if (props['이름']?.type === 'title' && props['이름'].title.length > 0) {
+          title = props['이름'].title[0].plain_text;
+        }
+
+        let date = null;
+        if (props['Date']?.type === 'date' && props['Date'].date) {
+          date = props['Date'].date.start;
+        }
+
+        let category = null;
+        if (props['카테고리']?.type === 'select' && props['카테고리'].select) {
+          category = props['카테고리'].select.name;
+        }
+
+        let location = null;
+        if (props['Location']?.type === 'rich_text' && props['Location'].rich_text.length > 0) {
+          location = props['Location'].rich_text[0].plain_text;
+        }
+
+        let isDone = false;
+        if (props['Done']?.type === 'checkbox') {
+          isDone = props['Done'].checkbox;
+        }
 
         return {
           id: page.id,
@@ -95,9 +114,9 @@ export class NotionService {
     location?: string
   ): Promise<string> {
     const notion = this.getClient();
-    const databaseId = this.getDatabaseId();
+    const dataSourceId = this.getDataSourceId();
 
-    const properties: any = {
+    const properties: Record<string, any> = {
       이름: {
         title: [
           {
@@ -136,7 +155,7 @@ export class NotionService {
 
     try {
       const response = await notion.pages.create({
-        parent: { database_id: databaseId },
+        parent: { type: 'data_source_id', data_source_id: dataSourceId },
         properties,
       });
 

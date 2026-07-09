@@ -50,10 +50,12 @@ export const scheduleCommand: Command = {
   async execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
 
-    if (!process.env.NOTION_API_KEY || !process.env.NOTION_SCHEDULER_DB_ID) {
+    if (!process.env.NOTION_API_KEY || !process.env.NOTION_SCHEDULER_DATA_SOURCE_ID) {
       await interaction.reply({
         embeds: [
-          createErrorEmbed('현재 노션 연동이 비활성화되어 있습니다. (API 키 또는 DB ID 누락)'),
+          createErrorEmbed(
+            '현재 노션 연동이 비활성화되어 있습니다. (API 키 또는 데이터 소스 ID 누락)'
+          ),
         ],
         ephemeral: true,
       });

@@ -54,6 +54,21 @@ export const paperclipCommand: Command = {
               { name: 'LIFE (개인)', value: 'life' }
             )
         )
+        .addStringOption((option) =>
+          option
+            .setName('상태')
+            .setDescription('조회할 이슈의 상태를 선택하세요. (기본: 모두 보기)')
+            .setRequired(false)
+            .addChoices(
+              { name: '모두 보기 (기본)', value: 'all' },
+              { name: '진행 중', value: 'in_progress' },
+              { name: '백로그', value: 'backlog' },
+              { name: '할 일', value: 'todo' },
+              { name: '완료됨', value: 'done' },
+              { name: '차단됨', value: 'blocked' },
+              { name: '취소됨', value: 'cancelled' }
+            )
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -129,6 +144,7 @@ export const paperclipCommand: Command = {
       }
     } else if (subcommand === '조회') {
       const limit = interaction.options.getInteger('개수') || 5;
+      const status = interaction.options.getString('상태') || 'all';
       const companyId = PaperclipService.getCompanyIdFromInteraction(interaction);
 
       if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
@@ -146,7 +162,7 @@ export const paperclipCommand: Command = {
       await interaction.deferReply();
 
       try {
-        const issues = await PaperclipService.listIssues(companyId, limit);
+        const issues = await PaperclipService.listIssues(companyId, limit, status);
 
         if (!Array.isArray(issues) || issues.length === 0) {
           const emptyEmbed = new EmbedBuilder()
@@ -160,9 +176,20 @@ export const paperclipCommand: Command = {
           return;
         }
 
+        const statusLabelMap: Record<string, string> = {
+          all: '전체',
+          in_progress: '진행 중',
+          backlog: '백로그',
+          todo: '할 일',
+          done: '완료됨',
+          blocked: '차단됨',
+          cancelled: '취소됨',
+        };
+        const statusLabel = statusLabelMap[status] || '전체';
+
         const embed = new EmbedBuilder()
           .setColor(Colors.INFO)
-          .setTitle(`📋 최근 이슈 목록 (Top ${issues.length})`)
+          .setTitle(`📋 최근 이슈 목록 [${statusLabel}] (Top ${issues.length})`)
           .setFooter({ text: 'Paperclip 연동' })
           .setTimestamp();
 

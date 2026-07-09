@@ -76,10 +76,12 @@ export class PaperclipService {
    * 이슈 리스트를 조회합니다.
    * @param companyId 대상 회사 ID
    * @param limit 가져올 이슈 개수 (기본 10개)
+   * @param status 필터링할 이슈 상태 (기본 'all' -> 전체 조회)
    */
   static async listIssues(
     companyId: string,
-    limit: number = 10
+    limit: number = 10,
+    status: string = 'all'
   ): Promise<PaperclipIssueResponse[]> {
     const token = process.env.PAPERCLIP_API_TOKEN;
     const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
@@ -89,11 +91,21 @@ export class PaperclipService {
     }
 
     try {
+      const params: Record<string, string | number> = { limit };
+
+      // 'all'이 아니면 명시적으로 status 파라미터 추가
+      if (status !== 'all') {
+        params.status = status;
+      } else {
+        // API 기본값이 'todo,in_progress,backlog' 이므로 'all'을 요청하면 완료/취소 등 모든 상태를 포함하도록 명시
+        params.status = 'todo,in_progress,blocked,backlog,done,cancelled';
+      }
+
       // NOTE: 실제 페이퍼클립 API 규격에 맞춰 수정 필요
       const response = await axios.get<PaperclipIssueResponse[]>(
         `${apiUrl}/companies/${companyId}/issues`,
         {
-          params: { limit },
+          params,
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

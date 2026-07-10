@@ -400,4 +400,188 @@ export class PaperclipService {
       throw new Error('Paperclip API Error');
     }
   }
+
+  /**
+   * 상태가 in_review인 이슈 목록을 조회합니다.
+   * @param companyId 대상 회사 ID
+   */
+  static async listInReviewIssues(companyId: string): Promise<PaperclipIssueResponse[]> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token || !companyId) {
+      throw new Error('PAPERCLIP_API_TOKEN or COMPANY_ID is not configured.');
+    }
+
+    try {
+      const response = await axios.get<PaperclipIssueResponse[]>(
+        `${apiUrl}/companies/${companyId}/issues`,
+        {
+          params: { status: 'in_review' },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to fetch in_review issues. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
+   * 이슈에 걸려있는 pending 상태의 request_confirmation interaction ID를 찾습니다.
+   * @param issueId 이슈 ID
+   */
+  static async getPendingConfirmationInteractionId(issueId: string): Promise<string | null> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      interface PaperclipInteraction {
+        id: string;
+        kind: string;
+        status: string;
+        [key: string]: unknown;
+      }
+
+      const safeIssueId = encodeURIComponent(issueId);
+
+      const response = await axios.get<PaperclipInteraction[]>(
+        `${apiUrl}/issues/${safeIssueId}/interactions`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const interactions = response.data;
+      if (!Array.isArray(interactions)) {
+        return null;
+      }
+
+      const confirmation = interactions.find(
+        (i) => i.kind === 'request_confirmation' && i.status === 'pending'
+      );
+
+      return confirmation ? confirmation.id : null;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to fetch issue interactions. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
+   * 계획(Plan)을 승인(Confirm)합니다.
+   * @param issueId 이슈 ID
+   * @param interactionId 상호작용 ID
+   */
+  static async acceptPlan(
+    issueId: string,
+    interactionId: string
+  ): Promise<Record<string, unknown>> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      const safeIssueId = encodeURIComponent(issueId);
+      const safeInteractionId = encodeURIComponent(interactionId);
+
+      const response = await axios.post<Record<string, unknown>>(
+        `${apiUrl}/issues/${safeIssueId}/interactions/${safeInteractionId}/accept`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to accept plan. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
+
+  /**
+   * 계획(Plan)을 거절(Decline/Reject)합니다.
+   * @param issueId 이슈 ID
+   * @param interactionId 상호작용 ID
+   * @param comment 거절 사유
+   */
+  static async rejectPlan(
+    issueId: string,
+    interactionId: string,
+    comment: string = ''
+  ): Promise<Record<string, unknown>> {
+    const token = process.env.PAPERCLIP_API_TOKEN;
+    const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
+
+    if (!token) {
+      throw new Error('PAPERCLIP_API_TOKEN is not configured.');
+    }
+
+    try {
+      const safeIssueId = encodeURIComponent(issueId);
+      const safeInteractionId = encodeURIComponent(interactionId);
+
+      const body: Record<string, string> = {};
+      if (comment) body.reason = comment;
+
+      const response = await axios.post<Record<string, unknown>>(
+        `${apiUrl}/issues/${safeIssueId}/interactions/${safeInteractionId}/reject`,
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      logger.error(`Failed to reject plan. Reason: ${errorMessage}`);
+      throw new Error('Paperclip API Error');
+    }
+  }
 }

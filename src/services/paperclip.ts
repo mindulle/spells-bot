@@ -317,12 +317,20 @@ export class PaperclipService {
     } catch (error: unknown) {
       let errorMessage = 'Unknown error';
       if (axios.isAxiosError(error)) {
-        errorMessage = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+        const responseData: unknown = error.response?.data;
+        if (responseData && typeof responseData === 'object') {
+          // 페이퍼클립 API 에러 형식을 추출 (예: {"error": "..."})
+          const dataRecord = responseData as Record<string, unknown>;
+          errorMessage =
+            typeof dataRecord.error === 'string' ? dataRecord.error : JSON.stringify(responseData);
+        } else {
+          errorMessage = error.message;
+        }
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
       logger.error(`Failed to update Paperclip issue. Reason: ${errorMessage}`);
-      throw new Error('Paperclip API Error');
+      throw new Error(errorMessage); // 여기서 실제 에러 메시지를 던짐
     }
   }
 
@@ -442,7 +450,9 @@ export class PaperclipService {
    * 이슈에 걸려있는 pending 상태의 request_confirmation interaction ID를 찾습니다.
    * @param issueId 이슈 ID
    */
-  static async getPendingConfirmationInteractionId(issueId: string): Promise<string | null> {
+  static async getPendingConfirmationInteraction(
+    issueId: string
+  ): Promise<{ id: string; agentId: string | null } | null> {
     const token = process.env.PAPERCLIP_API_TOKEN;
     const apiUrl = process.env.PAPERCLIP_API_URL || 'http://localhost:3000/api';
 
@@ -455,6 +465,7 @@ export class PaperclipService {
         id: string;
         kind: string;
         status: string;
+        createdByAgentId?: string | null;
         [key: string]: unknown;
       }
 
@@ -479,7 +490,9 @@ export class PaperclipService {
         (i) => i.kind === 'request_confirmation' && i.status === 'pending'
       );
 
-      return confirmation ? confirmation.id : null;
+      return confirmation
+        ? { id: confirmation.id, agentId: confirmation.createdByAgentId || null }
+        : null;
     } catch (error: unknown) {
       let errorMessage = 'Unknown error';
       if (axios.isAxiosError(error)) {

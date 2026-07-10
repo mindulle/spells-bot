@@ -369,10 +369,14 @@ export const paperclipCommand: Command = {
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
         logger.error('Error in /이슈 할당 command:', error);
+        const errorMsg =
+          error instanceof Error && error.message !== 'Unknown error'
+            ? `\n(사유: ${error.message})`
+            : '';
         await interaction.editReply({
           embeds: [
             createErrorEmbed(
-              '이슈를 할당하는 중 오류가 발생했습니다. 이슈 ID를 다시 확인해주세요.'
+              `이슈를 할당하는 중 오류가 발생했습니다. 이슈 ID를 다시 확인해주세요.${errorMsg}`
             ),
           ],
         });
@@ -425,10 +429,14 @@ export const paperclipCommand: Command = {
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {
         logger.error('Error in /이슈 상태 command:', error);
+        const errorMsg =
+          error instanceof Error && error.message !== 'Unknown error'
+            ? `\n(사유: ${error.message})`
+            : '';
         await interaction.editReply({
           embeds: [
             createErrorEmbed(
-              '이슈 상태를 변경하는 중 오류가 발생했습니다. 이슈 ID를 다시 확인해주세요.'
+              `이슈 상태를 변경하는 중 오류가 발생했습니다. 이슈 ID를 다시 확인해주세요.${errorMsg}`
             ),
           ],
         });

@@ -128,10 +128,10 @@ export const paperclipPlanCommand: Command = {
       await interaction.deferReply();
 
       try {
-        // 1. Get interaction ID for this issue
-        const interactionId = await PaperclipService.getPendingConfirmationInteractionId(issueId);
+        // 1. Get interaction for this issue
+        const interactionData = await PaperclipService.getPendingConfirmationInteraction(issueId);
 
-        if (!interactionId) {
+        if (!interactionData) {
           await interaction.editReply({
             embeds: [
               createErrorEmbed(
@@ -143,11 +143,23 @@ export const paperclipPlanCommand: Command = {
         }
 
         // 2. Accept Plan
-        await PaperclipService.acceptPlan(issueId, interactionId);
+        await PaperclipService.acceptPlan(issueId, interactionData.id);
+
+        let heartbeatMsg = '';
+        // 3. Invoke Agent Heartbeat to wake them up
+        if (interactionData.agentId) {
+          try {
+            await PaperclipService.invokeAgentHeartbeat(interactionData.agentId);
+            heartbeatMsg = '\n\n*(에이전트를 깨웠습니다. 곧 다음 작업을 시작합니다!)*';
+          } catch (e) {
+            logger.warn(`Failed to wake up agent ${interactionData.agentId}`, e);
+          }
+        }
 
         const embed = new EmbedBuilder()
           .setColor(Colors.SUCCESS)
           .setTitle('✅ 계획이 승인되었습니다.')
+          .setDescription(`승인 처리가 완료되었습니다.${heartbeatMsg}`)
           .addFields({ name: '이슈 ID', value: issueId, inline: true })
           .setFooter({ text: 'Paperclip 연동' })
           .setTimestamp();
@@ -177,9 +189,9 @@ export const paperclipPlanCommand: Command = {
 
       try {
         // 1. Get interaction ID for this issue
-        const interactionId = await PaperclipService.getPendingConfirmationInteractionId(issueId);
+        const interactionData = await PaperclipService.getPendingConfirmationInteraction(issueId);
 
-        if (!interactionId) {
+        if (!interactionData) {
           await interaction.editReply({
             embeds: [
               createErrorEmbed(
@@ -191,11 +203,23 @@ export const paperclipPlanCommand: Command = {
         }
 
         // 2. Reject Plan
-        await PaperclipService.rejectPlan(issueId, interactionId, comment);
+        await PaperclipService.rejectPlan(issueId, interactionData.id, comment);
+
+        let heartbeatMsg = '';
+        // 3. Invoke Agent Heartbeat to wake them up
+        if (interactionData.agentId) {
+          try {
+            await PaperclipService.invokeAgentHeartbeat(interactionData.agentId);
+            heartbeatMsg = '\n\n*(에이전트를 깨웠습니다. 곧 피드백을 반영하여 다시 작업합니다!)*';
+          } catch (e) {
+            logger.warn(`Failed to wake up agent ${interactionData.agentId}`, e);
+          }
+        }
 
         const embed = new EmbedBuilder()
           .setColor(Colors.WARNING)
           .setTitle('❌ 계획이 거절되었습니다.')
+          .setDescription(`거절 처리 및 피드백 전송이 완료되었습니다.${heartbeatMsg}`)
           .addFields(
             { name: '이슈 ID', value: issueId, inline: true },
             { name: '사유(코멘트)', value: comment || '없음', inline: false }

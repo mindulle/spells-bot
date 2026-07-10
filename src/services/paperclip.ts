@@ -458,8 +458,10 @@ export class PaperclipService {
         [key: string]: unknown;
       }
 
+      const safeIssueId = encodeURIComponent(issueId);
+
       const response = await axios.get<PaperclipInteraction[]>(
-        `${apiUrl}/issues/${issueId}/interactions`,
+        `${apiUrl}/issues/${safeIssueId}/interactions`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -469,6 +471,10 @@ export class PaperclipService {
       );
 
       const interactions = response.data;
+      if (!Array.isArray(interactions)) {
+        return null;
+      }
+
       const confirmation = interactions.find(
         (i) => i.kind === 'request_confirmation' && i.status === 'pending'
       );
@@ -503,8 +509,11 @@ export class PaperclipService {
     }
 
     try {
+      const safeIssueId = encodeURIComponent(issueId);
+      const safeInteractionId = encodeURIComponent(interactionId);
+
       const response = await axios.post<Record<string, unknown>>(
-        `${apiUrl}/issues/${issueId}/interactions/${interactionId}/accept`,
+        `${apiUrl}/issues/${safeIssueId}/interactions/${safeInteractionId}/accept`,
         {},
         {
           headers: {
@@ -546,11 +555,14 @@ export class PaperclipService {
     }
 
     try {
+      const safeIssueId = encodeURIComponent(issueId);
+      const safeInteractionId = encodeURIComponent(interactionId);
+
       const body: Record<string, string> = {};
       if (comment) body.reason = comment;
 
       const response = await axios.post<Record<string, unknown>>(
-        `${apiUrl}/issues/${issueId}/interactions/${interactionId}/reject`,
+        `${apiUrl}/issues/${safeIssueId}/interactions/${safeInteractionId}/reject`,
         body,
         {
           headers: {

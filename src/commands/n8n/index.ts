@@ -1,4 +1,9 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  EmbedBuilder,
+  PermissionFlagsBits,
+} from 'discord.js';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
@@ -8,6 +13,7 @@ export const n8nCommand: Command = {
   data: new SlashCommandBuilder()
     .setName('n8n')
     .setDescription('n8n 워크플로우 및 상태를 관리합니다.')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand((subcommand) =>
       subcommand.setName('상태').setDescription('n8n 서버의 상태(Health Check)를 확인합니다.')
     )
@@ -52,6 +58,31 @@ export const n8nCommand: Command = {
       await interaction.editReply({ embeds: [embed] });
     } else if (subcommand === '실행') {
       const url = interaction.options.getString('url', true);
+
+      try {
+        const parsedUrl = new URL(url);
+        const allowedUrl = process.env.N8N_API_URL || 'http://localhost:5678';
+        const allowedHost = new URL(allowedUrl).host;
+
+        if (parsedUrl.host !== allowedHost) {
+          await interaction.reply({
+            embeds: [
+              createErrorEmbed(
+                '허용되지 않은 도메인의 Webhook URL입니다. (n8n 호스트와 일치해야 합니다)'
+              ),
+            ],
+            ephemeral: true,
+          });
+          return;
+        }
+      } catch (e) {
+        await interaction.reply({
+          embeds: [createErrorEmbed('올바르지 않은 Webhook URL 형식입니다.')],
+          ephemeral: true,
+        });
+        return;
+      }
+
       const dataStr = interaction.options.getString('데이터') || '{}';
 
       let payload: unknown;

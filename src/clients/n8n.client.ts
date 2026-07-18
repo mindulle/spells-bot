@@ -9,7 +9,7 @@ class N8nClient {
 
   private constructor() {
     this.healthUrl = process.env.N8N_HEALTH_WEBHOOK || 'http://localhost:5678/healthz';
-    this.apiUrl = process.env.N8N_API_URL;
+    this.apiUrl = process.env.N8N_API_URL?.replace(/\/$/, '');
     this.apiKey = process.env.N8N_API_KEY;
   }
 

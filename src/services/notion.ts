@@ -389,6 +389,7 @@ export class NotionService {
 
       return response.id;
     } catch (error: unknown) {
+      logger.warn('Failed to create todo with Korean properties, retrying with English...', error);
       // 영문 Name 프로퍼티일 경우에 대한 재시도
       properties = {
         Name: properties['이름'],

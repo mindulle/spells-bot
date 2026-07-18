@@ -74,11 +74,18 @@ export const todoCommand: Command = {
           .setTimestamp();
 
         let description = '';
-        todos.forEach((todo, index) => {
+        const maxDisplay = 25;
+        const displayedTodos = todos.slice(0, maxDisplay);
+
+        displayedTodos.forEach((todo, index) => {
           const priorityTag = todo.priority ? ` \`[${todo.priority}]\`` : '';
           const statusTag = todo.status ? ` - ${todo.status}` : '';
           description += `${index + 1}. **${todo.title}**${priorityTag}${statusTag}\n`;
         });
+
+        if (todos.length > maxDisplay) {
+          description += `\n*외 ${todos.length - maxDisplay}개의 할 일이 더 있습니다.*`;
+        }
 
         embed.setDescription(description);
 

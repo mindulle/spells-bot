@@ -7,6 +7,7 @@ import {
   TextInputStyle,
   ActionRowBuilder,
   EmbedBuilder,
+  ChatInputCommandInteraction,
 } from 'discord.js';
 import { logger } from '../utils/logger';
 import { handleCommandError } from '../utils/error-handler';
@@ -39,10 +40,7 @@ export function registerInteractionCreateEvent(client: Client, commands: Command
           });
         } catch (error) {
           logger.error('Command execution failed', error);
-          await handleCommandError(
-            interaction as import('discord.js').ChatInputCommandInteraction,
-            error
-          );
+          await handleCommandError(interaction as ChatInputCommandInteraction, error);
         }
       } else if (interaction.isAutocomplete()) {
         const command = commands.get(interaction.commandName);

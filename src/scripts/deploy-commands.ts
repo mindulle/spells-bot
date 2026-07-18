@@ -15,6 +15,7 @@ import { ledgerCommand } from '../commands/notion/ledger';
 import { todoCommand } from '../commands/todo/index';
 import { n8nCommand } from '../commands/n8n/index';
 import { radioCommand } from '../commands/radio/index';
+import { helpCommand } from '../commands/help/index';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ const commands = [
   todoCommand.data.toJSON(),
   n8nCommand.data.toJSON(),
   radioCommand.data.toJSON(),
+  helpCommand.data.toJSON(),
 ];
 
 const token = process.env.DISCORD_TOKEN;

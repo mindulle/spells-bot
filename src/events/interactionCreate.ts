@@ -12,7 +12,8 @@ import {
 import { logger } from '../utils/logger';
 import { handleCommandError } from '../utils/error-handler';
 import { PaperclipService } from '../services/paperclip';
-import { Colors } from '../utils/embed-builder';
+import { Colors, createErrorEmbed } from '../utils/embed-builder';
+import { createIssueSuccessEmbed } from '../commands/paperclip/index';
 import type { CommandMap } from '../types/commands';
 
 export function registerInteractionCreateEvent(client: Client, commands: CommandMap): void {
@@ -132,6 +133,25 @@ export function registerInteractionCreateEvent(client: Client, commands: Command
             await interaction.followUp({
               content: '❌ 반려 처리 중 오류가 발생했습니다.',
               ephemeral: true,
+            });
+          }
+        } else if (customId.startsWith('modal_issue_create_')) {
+          const companyId = customId.replace('modal_issue_create_', '');
+          const title = interaction.fields.getTextInputValue('issue_title');
+          const description = interaction.fields.getTextInputValue('issue_description');
+
+          try {
+            await interaction.deferReply();
+
+            const issue = await PaperclipService.createIssue(companyId, title, description);
+
+            const embed = createIssueSuccessEmbed(issue);
+
+            await interaction.editReply({ embeds: [embed] });
+          } catch (error) {
+            logger.error('Failed to create issue via modal', error);
+            await interaction.editReply({
+              embeds: [createErrorEmbed('이슈를 생성하는 중 서버 통신 오류가 발생했습니다.')],
             });
           }
         }

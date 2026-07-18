@@ -1,8 +1,29 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  EmbedBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ActionRowBuilder,
+} from 'discord.js';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
-import { PaperclipService } from '../../services/paperclip';
+import { PaperclipService, PaperclipIssueResponse } from '../../services/paperclip';
+
+export function createIssueSuccessEmbed(issue: PaperclipIssueResponse) {
+  return new EmbedBuilder()
+    .setColor(Colors.SUCCESS)
+    .setTitle('✅ 새로운 이슈가 페이퍼클립에 등록되었습니다.')
+    .setDescription(`**${issue.title}**\n\n${issue.description}`)
+    .addFields(
+      { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
+      { name: '상태', value: issue.status || 'Backlog', inline: true }
+    )
+    .setFooter({ text: 'Paperclip 연동' })
+    .setTimestamp();
+}
 
 const AGENTS = [
   { name: 'Nuri (CTO)', value: '4ec5a12a-49bf-4047-8207-96a4a0723423' },
@@ -24,14 +45,17 @@ export const paperclipCommand: Command = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('생성')
-        .setDescription('새로운 이슈(백로그)를 생성합니다.')
+        .setDescription('새로운 이슈(백로그)를 생성합니다. (입력 없이 엔터 시 팝업창이 뜹니다!)')
         .addStringOption((option) =>
-          option.setName('제목').setDescription('이슈의 제목을 입력하세요.').setRequired(true)
+          option
+            .setName('제목')
+            .setDescription('빠른 생성을 원할 경우 제목을 입력하세요.')
+            .setRequired(false)
         )
         .addStringOption((option) =>
           option
             .setName('내용')
-            .setDescription('이슈의 상세 내용을 입력하세요. (선택사항)')
+            .setDescription('빠른 생성을 원할 경우 내용을 입력하세요.')
             .setRequired(false)
         )
         .addStringOption((option) =>
@@ -158,8 +182,9 @@ export const paperclipCommand: Command = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === '생성') {
-      const title = interaction.options.getString('제목', true);
-      const description = interaction.options.getString('내용') || '상세 내용 없음';
+      const title = interaction.options.getString('제목');
+      const rawDescription = interaction.options.getString('내용');
+      const description = rawDescription || '상세 내용 없음';
       const companyId = PaperclipService.getCompanyIdFromInteraction(interaction);
 
       if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
@@ -174,24 +199,47 @@ export const paperclipCommand: Command = {
         return;
       }
 
-      // 응답 지연 (API 통신 시간이 걸릴 수 있으므로 deferReply 처리)
+      // 제목이 입력되지 않았다면 모달 팝업 띄우기
+      if (!title) {
+        const modal = new ModalBuilder()
+          .setCustomId(`modal_issue_create_${companyId}`)
+          .setTitle('새로운 이슈 생성');
+
+        const titleInput = new TextInputBuilder()
+          .setCustomId('issue_title')
+          .setLabel('이슈 제목')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setPlaceholder('예: 홈페이지 메인 배너 디자인 수정');
+
+        const descInput = new TextInputBuilder()
+          .setCustomId('issue_description')
+          .setLabel('상세 내용 (프롬프트/지시사항)')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true)
+          .setPlaceholder('에이전트가 이해할 수 있도록 최대한 상세히 적어주세요.')
+          .setMaxLength(2000); // 디스코드 모달 텍스트 길이 제한 감안
+
+        if (rawDescription) {
+          descInput.setValue(rawDescription);
+        }
+
+        const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(titleInput);
+        const secondActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(descInput);
+
+        modal.addComponents(firstActionRow, secondActionRow);
+
+        await interaction.showModal(modal);
+        return;
+      }
+
+      // 제목이 입력되었다면 기존처럼 빠른 생성 (Quick Create)
       await interaction.deferReply();
 
       try {
-        // Paperclip API를 호출하여 실제 이슈 생성
         const issue = await PaperclipService.createIssue(companyId, title, description);
 
-        // 성공 시 응답할 디스코드 임베드 생성
-        const embed = new EmbedBuilder()
-          .setColor(Colors.SUCCESS)
-          .setTitle('✅ 새로운 이슈가 페이퍼클립에 등록되었습니다.')
-          .setDescription(`**${issue.title}**\n\n${issue.description}`)
-          .addFields(
-            { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
-            { name: '상태', value: issue.status || 'Backlog', inline: true }
-          )
-          .setFooter({ text: 'Paperclip 연동' })
-          .setTimestamp();
+        const embed = createIssueSuccessEmbed(issue);
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {

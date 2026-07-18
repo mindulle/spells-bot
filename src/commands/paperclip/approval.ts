@@ -1,4 +1,11 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} from 'discord.js';
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
@@ -87,27 +94,45 @@ export const paperclipApprovalCommand: Command = {
           return;
         }
 
-        const embed = new EmbedBuilder()
-          .setColor(Colors.INFO)
-          .setTitle(`📋 결재 대기 목록 (총 ${approvals.length}건)`)
-          .setFooter({ text: 'Paperclip 연동' })
-          .setTimestamp();
-
-        let description = '';
-        const MAX_DISPLAY = 15;
+        const MAX_DISPLAY = 5;
         const displayApprovals = approvals.slice(0, MAX_DISPLAY);
 
-        displayApprovals.forEach((approval) => {
-          description += `⏳ **[${approval.id?.substring(0, 8) || 'N/A'}]** ${approval.title || '제목 없음'}\n`;
+        await interaction.editReply({
+          content: `총 **${approvals.length}건**의 대기 중인 결재가 있습니다. (최근 ${displayApprovals.length}건 출력)`,
         });
 
-        if (approvals.length > MAX_DISPLAY) {
-          description += `\n*... 외 ${approvals.length - MAX_DISPLAY}건의 결재 대기가 더 있습니다.*`;
+        for (const approval of displayApprovals) {
+          const approvalId = approval.id || 'unknown';
+          const title = approval.title || '제목 없음';
+          const desc = approval.description || '상세 내용이 없습니다.';
+
+          const embed = new EmbedBuilder()
+            .setColor(Colors.WARNING)
+            .setTitle(`⏳ [결재 요청] ${title}`)
+            .setDescription(desc.length > 2000 ? desc.substring(0, 1997) + '...' : desc)
+            .addFields({ name: '결재 ID', value: `\`${approvalId}\``, inline: true })
+            .setFooter({ text: 'Paperclip 에이전트 결재 시스템' })
+            .setTimestamp();
+
+          const approveBtn = new ButtonBuilder()
+            .setCustomId(`approve_${approvalId}`)
+            .setLabel('승인')
+            .setEmoji('✅')
+            .setStyle(ButtonStyle.Success);
+
+          const rejectBtn = new ButtonBuilder()
+            .setCustomId(`reject_init_${approvalId}`) // reject_init triggers modal
+            .setLabel('반려 (사유 입력)')
+            .setEmoji('❌')
+            .setStyle(ButtonStyle.Danger);
+
+          const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+            approveBtn,
+            rejectBtn
+          );
+
+          await interaction.followUp({ embeds: [embed], components: [actionRow] });
         }
-
-        embed.setDescription(description || '결재를 불러올 수 없습니다.');
-
-        await interaction.editReply({ embeds: [embed] });
       } catch (error) {
         logger.error('Error in /결재 대기 command:', error);
         await interaction.editReply({

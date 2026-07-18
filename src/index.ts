@@ -21,6 +21,7 @@ import { paperclipPlanCommand } from './commands/paperclip/plan';
 import { scheduleCommand } from './commands/notion/index';
 import { ledgerCommand } from './commands/notion/ledger';
 import { todoCommand } from './commands/todo/index';
+import { addTodoContextMenu } from './commands/todo/context-menu';
 import { n8nCommand } from './commands/n8n/index';
 import { radioCommand } from './commands/radio/index';
 import { helpCommand } from './commands/help/index';
@@ -89,6 +90,7 @@ async function main() {
       [scheduleCommand.data.name, scheduleCommand],
       [ledgerCommand.data.name, ledgerCommand],
       [todoCommand.data.name, todoCommand],
+      [addTodoContextMenu.data.name, addTodoContextMenu],
       [n8nCommand.data.name, n8nCommand],
       [radioCommand.data.name, radioCommand],
       [helpCommand.data.name, helpCommand],

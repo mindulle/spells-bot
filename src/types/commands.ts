@@ -1,14 +1,19 @@
 import {
-  ChatInputCommandInteraction,
   AutocompleteInteraction,
   SlashCommandBuilder,
   SlashCommandSubcommandsOnlyBuilder,
   SlashCommandOptionsOnlyBuilder,
+  ContextMenuCommandBuilder,
 } from 'discord.js';
 
 export interface Command {
-  data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder | SlashCommandOptionsOnlyBuilder;
-  execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+  data:
+    | SlashCommandBuilder
+    | SlashCommandSubcommandsOnlyBuilder
+    | SlashCommandOptionsOnlyBuilder
+    | ContextMenuCommandBuilder;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  execute: (interaction: any) => Promise<void>;
   autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 }
 

@@ -34,6 +34,14 @@ export const todoCommand: Command = {
   async execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
 
+    if (subcommand !== '추가') {
+      await interaction.reply({
+        embeds: [createErrorEmbed('지원하지 않는 서브명령어입니다.')],
+        ephemeral: true,
+      });
+      return;
+    }
+
     const webhookUrl = process.env.N8N_WEBHOOK_TODO_ADD;
     if (!webhookUrl) {
       await interaction.reply({
@@ -47,39 +55,37 @@ export const todoCommand: Command = {
       return;
     }
 
-    if (subcommand === '추가') {
-      const title = interaction.options.getString('내용', true);
-      const priority = interaction.options.getString('우선순위') || 'Normal';
+    const title = interaction.options.getString('내용', true);
+    const priority = interaction.options.getString('우선순위') || 'Normal';
 
-      await interaction.deferReply();
+    await interaction.deferReply();
 
-      try {
-        // n8n Webhook으로 데이터 전송
-        await n8nClient.triggerWebhook(webhookUrl, {
-          title,
-          priority,
-          source: 'Discord',
-          user: interaction.user.tag,
-        });
+    try {
+      // n8n Webhook으로 데이터 전송
+      await n8nClient.triggerWebhook(webhookUrl, {
+        title,
+        priority,
+        source: 'Discord',
+        user: interaction.user.tag,
+      });
 
-        const embed = new EmbedBuilder()
-          .setColor(Colors.SUCCESS)
-          .setTitle('✅ MS To Do에 할 일이 추가되었습니다.')
-          .addFields({ name: '내용', value: title, inline: true });
+      const embed = new EmbedBuilder()
+        .setColor(Colors.SUCCESS)
+        .setTitle('✅ MS To Do에 할 일이 추가되었습니다.')
+        .addFields({ name: '내용', value: title, inline: true });
 
-        if (priority !== 'Normal') {
-          embed.addFields({ name: '우선순위', value: priority, inline: true });
-        }
-
-        embed.setFooter({ text: 'n8n ➡️ MS To Do 연동' }).setTimestamp();
-
-        await interaction.editReply({ embeds: [embed] });
-      } catch (error) {
-        logger.error('Error in /할일 추가 command:', error);
-        await interaction.editReply({
-          embeds: [createErrorEmbed('할 일을 추가하는 중 n8n 서버와 통신 오류가 발생했습니다.')],
-        });
+      if (priority !== 'Normal') {
+        embed.addFields({ name: '우선순위', value: priority, inline: true });
       }
+
+      embed.setFooter({ text: 'n8n ➡️ MS To Do 연동' }).setTimestamp();
+
+      await interaction.editReply({ embeds: [embed] });
+    } catch (error) {
+      logger.error('Error in /할일 추가 command:', error);
+      await interaction.editReply({
+        embeds: [createErrorEmbed('할 일을 추가하는 중 n8n 서버와 통신 오류가 발생했습니다.')],
+      });
     }
   },
 };

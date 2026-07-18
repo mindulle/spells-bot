@@ -23,6 +23,7 @@ import { ledgerCommand } from './commands/notion/ledger';
 import { todoCommand } from './commands/todo/index';
 import { n8nCommand } from './commands/n8n/index';
 import { radioCommand } from './commands/radio/index';
+import { helpCommand } from './commands/help/index';
 
 import { Player } from 'discord-player';
 
@@ -90,6 +91,7 @@ async function main() {
       [todoCommand.data.name, todoCommand],
       [n8nCommand.data.name, n8nCommand],
       [radioCommand.data.name, radioCommand],
+      [helpCommand.data.name, helpCommand],
     ]);
 
     logger.info(`Registered ${commands.size} commands`);

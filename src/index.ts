@@ -20,7 +20,7 @@ import { paperclipAgentCommand } from './commands/paperclip/agent';
 import { paperclipPlanCommand } from './commands/paperclip/plan';
 import { scheduleCommand } from './commands/notion/index';
 import { ledgerCommand } from './commands/notion/ledger';
-import { todoCommand } from './commands/notion/todo';
+import { todoCommand } from './commands/todo/index';
 import { n8nCommand } from './commands/n8n/index';
 import { radioCommand } from './commands/radio/index';
 

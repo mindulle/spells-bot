@@ -63,11 +63,15 @@ export function registerInteractionCreateEvent(client: Client, commands: Command
             await interaction.deferUpdate(); // Update message state
             await PaperclipService.approve(approvalId, '디스코드 버튼을 통해 승인되었습니다.');
 
-            const embed = new EmbedBuilder()
-              .setColor(Colors.SUCCESS)
-              .setTitle('✅ 결재 승인 완료')
-              .setDescription(`결재 ID \`${approvalId}\`가 승인되었습니다.`)
-              .setTimestamp();
+            const originalEmbed = interaction.message?.embeds[0];
+            const embed = originalEmbed
+              ? EmbedBuilder.from(originalEmbed)
+                  .setColor(Colors.SUCCESS)
+                  .setTitle(originalEmbed.title?.replace('⏳', '✅') || '✅ 결재 승인 완료')
+              : new EmbedBuilder()
+                  .setColor(Colors.SUCCESS)
+                  .setTitle('✅ 결재 승인 완료')
+                  .setDescription(`결재 ID \`${approvalId}\`가 승인되었습니다.`);
 
             await interaction.editReply({ embeds: [embed], components: [] });
           } catch (error) {
@@ -109,13 +113,18 @@ export function registerInteractionCreateEvent(client: Client, commands: Command
             await interaction.deferUpdate();
             await PaperclipService.reject(approvalId, reason);
 
-            const embed = new EmbedBuilder()
-              .setColor(Colors.WARNING)
-              .setTitle('❌ 결재 반려 완료')
-              .setDescription(
-                `결재 ID \`${approvalId}\`가 다음 사유로 반려되었습니다:\n> ${reason}`
-              )
-              .setTimestamp();
+            const originalEmbed = interaction.message?.embeds[0];
+            const embed = originalEmbed
+              ? EmbedBuilder.from(originalEmbed)
+                  .setColor(Colors.ERROR)
+                  .setTitle(originalEmbed.title?.replace('⏳', '❌') || '❌ 결재 반려 완료')
+                  .addFields({ name: '반려 사유', value: reason, inline: false })
+              : new EmbedBuilder()
+                  .setColor(Colors.WARNING)
+                  .setTitle('❌ 결재 반려 완료')
+                  .setDescription(
+                    `결재 ID \`${approvalId}\`가 다음 사유로 반려되었습니다:\n> ${reason}`
+                  );
 
             await interaction.editReply({ embeds: [embed], components: [] });
           } catch (error) {

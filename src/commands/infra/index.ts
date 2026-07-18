@@ -88,16 +88,8 @@ export const infraCommand: Command = {
       case '대시보드': {
         await interaction.deferReply({ ephemeral: true });
 
-        // Use the current channel as the dashboard channel temporarily or trigger an update
-        const originalChannelId = process.env.DASHBOARD_CHANNEL_ID;
-        process.env.DASHBOARD_CHANNEL_ID = interaction.channelId;
-
-        await DashboardService.updateDashboard(interaction.client);
-
-        // Restore original if it existed, otherwise let it keep tracking this channel
-        if (originalChannelId) {
-          process.env.DASHBOARD_CHANNEL_ID = originalChannelId;
-        }
+        // Trigger dashboard update for the current channel
+        await DashboardService.updateDashboard(interaction.client, interaction.channelId);
 
         await interaction.editReply({ content: '✅ 라이브 대시보드가 갱신되었습니다.' });
         break;

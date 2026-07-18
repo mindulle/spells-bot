@@ -105,16 +105,17 @@ async function main() {
     registerMessageCreateEvent(client);
     registerMessageReactionAddEvent(client);
 
+    // Login to Discord
+    await client.login(token);
+
     // Start Live Dashboard Interval (every 5 minutes)
+    void DashboardService.updateDashboard(client);
     setInterval(
       () => {
         void DashboardService.updateDashboard(client);
       },
       5 * 60 * 1000
     );
-
-    // Login to Discord
-    await client.login(token);
 
     // Graceful shutdown
     process.on('SIGINT', () => {

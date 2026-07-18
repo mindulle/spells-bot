@@ -6,15 +6,14 @@ import { PaperclipService } from './paperclip';
 import { Colors } from '../utils/embed-builder';
 
 export class DashboardService {
-  private static isUpdating = false;
+  private static updatingChannels = new Set<string>();
 
-  static async updateDashboard(client: Client): Promise<void> {
-    if (this.isUpdating) return;
-
-    const channelId = process.env.DASHBOARD_CHANNEL_ID;
+  static async updateDashboard(client: Client, targetChannelId?: string): Promise<void> {
+    const channelId = targetChannelId || process.env.DASHBOARD_CHANNEL_ID;
     if (!channelId) return;
 
-    this.isUpdating = true;
+    if (this.updatingChannels.has(channelId)) return;
+    this.updatingChannels.add(channelId);
 
     try {
       const channel = (await client.channels.fetch(channelId)) as TextChannel;
@@ -25,7 +24,10 @@ export class DashboardService {
 
       // 1. Gather Data
       const [health, schedules] = await Promise.all([
-        healthService.getSystemStatus(),
+        healthService.getSystemStatus().catch((err) => {
+          logger.error('Failed to get system status for dashboard', err);
+          return { minio: false, n8n: false, k3s: false, timestamp: new Date() };
+        }),
         NotionService.getTodaySchedules().catch(() => []),
       ]);
 
@@ -91,7 +93,7 @@ export class DashboardService {
     } catch (error) {
       logger.error('Error updating live dashboard:', error);
     } finally {
-      this.isUpdating = false;
+      this.updatingChannels.delete(channelId);
     }
   }
 }

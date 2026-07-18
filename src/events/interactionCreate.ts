@@ -12,7 +12,7 @@ import {
 import { logger } from '../utils/logger';
 import { handleCommandError } from '../utils/error-handler';
 import { PaperclipService } from '../services/paperclip';
-import { Colors } from '../utils/embed-builder';
+import { Colors, createErrorEmbed } from '../utils/embed-builder';
 import type { CommandMap } from '../types/commands';
 
 export function registerInteractionCreateEvent(client: Client, commands: CommandMap): void {
@@ -132,6 +132,34 @@ export function registerInteractionCreateEvent(client: Client, commands: Command
             await interaction.followUp({
               content: '❌ 반려 처리 중 오류가 발생했습니다.',
               ephemeral: true,
+            });
+          }
+        } else if (customId.startsWith('modal_issue_create_')) {
+          const companyId = customId.replace('modal_issue_create_', '');
+          const title = interaction.fields.getTextInputValue('issue_title');
+          const description = interaction.fields.getTextInputValue('issue_description');
+
+          try {
+            await interaction.deferReply();
+
+            const issue = await PaperclipService.createIssue(companyId, title, description);
+
+            const embed = new EmbedBuilder()
+              .setColor(Colors.SUCCESS)
+              .setTitle('✅ 새로운 이슈가 페이퍼클립에 등록되었습니다.')
+              .setDescription(`**${issue.title}**\n\n${issue.description}`)
+              .addFields(
+                { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
+                { name: '상태', value: issue.status || 'Backlog', inline: true }
+              )
+              .setFooter({ text: 'Paperclip 연동' })
+              .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+          } catch (error) {
+            logger.error('Failed to create issue via modal', error);
+            await interaction.editReply({
+              embeds: [createErrorEmbed('이슈를 생성하는 중 서버 통신 오류가 발생했습니다.')],
             });
           }
         }

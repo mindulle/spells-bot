@@ -1,0 +1,472 @@
+{
+  "updatedAt": "2026-07-04T15:49:49.882Z",
+  "createdAt": "2026-06-12T14:37:26.685Z",
+  "id": "tbtaxDnYBrehFPzN",
+  "name": "[Bot] Gmail to Discord - hoofoo1021",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const email = $json;\nconst labelsRaw = JSON.parse(email.allGmailLabels || \"[]\");\nconst labelsMap = {};\nif (Array.isArray(labelsRaw)) {\n  for (const label of labelsRaw) labelsMap[label.id] = label.name;\n}\nlet targetWebhookUrl = null;\nlet targetLabelName = \"Unknown\";\nlet embedColor = 10181046;\n\nconst webhookUrls = {\n  \"MarketTrends\": \"https://discord.com/api/webhooks/1515005435504099459/X24LEkV_b8Y_t5VWpa92n6_L91ipp0za7ViAnePmopJwXy55NWa7BX4XMsCUWozXW5cj\",\n  \"EducationNews\": \"https://discord.com/api/webhooks/1515005412494151761/G0P9jfJxwIo2xJnWRcky2FjDDg1kZ8TTobqZQLzeJG4psCcBZqnMMzX8DFMRRtEXa5YR\",\n  \"Hiring\": \"https://discord.com/api/webhooks/1515005415979749469/j4elrb__MgZGv8Y9gVKC8qb4W2jT7pdBYA9a9ElRq0qXZSOuFws9fQv9rw-wvAZSNftx\",\n  \"Routines\": \"https://discord.com/api/webhooks/1515005419272143025/Xi5e5rKq8rWF8azXL23BI1HsdMqOyD8sUyzTrYcejRP_4XKRdyfioJ_IvgFBNxQO9R6P\",\n  \"Vibes\": \"https://discord.com/api/webhooks/1515005431016063256/bWGztZfIBf5l3B2LphteiZdlkYSIIv3j0x-O-8Neei4SNWuYmriKsuxO7Et2dIClfVNJ\",\n  \"Internal\": \"https://discord.com/api/webhooks/1484329239795859587/ZSbwFaCWqUpHcNEY1hCwUpfXxbEw3ml4BcYpSC_Ds4hVUdSkErAjbgTowS4GjbXnk8iz\"\n};\n\nconst currentLabelIds = email.labelIds || (email.labels ? email.labels.map(l => l.id) : []);\nfor (const labelId of currentLabelIds) {\n  const labelName = labelsMap[labelId] || \"\";\n  if (labelName) {\n    targetLabelName = labelName;\n    if (labelName === \"경제\") { targetWebhookUrl = webhookUrls[\"MarketTrends\"]; embedColor = 3066993; break; }\n    else if (labelName === \"문화\" || labelName === \"취미\") { targetWebhookUrl = webhookUrls[\"Vibes\"]; embedColor = 15105570; break; }\n    else if (labelName === \"생활\" || labelName === \"요리\") { targetWebhookUrl = webhookUrls[\"Routines\"]; embedColor = 3447003; break; }\n    else if (labelName === \"커리어\") { targetWebhookUrl = webhookUrls[\"Hiring\"]; embedColor = 1146986; break; }\n    else if (labelName === \"학사\" || labelName === \"학습\") { targetWebhookUrl = webhookUrls[\"EducationNews\"]; embedColor = 2123412; break; }\n  }\n}\n\nif (!targetWebhookUrl) {\n  targetWebhookUrl = webhookUrls[\"Internal\"];\n  targetLabelName = \"INBOX/Other\";\n}\n\nlet from = email.From || email.from || email.sender || email.Sender || 'Unknown Sender';\nlet subject = email.Subject || email.subject || 'No Subject';\n\nfunction getHeader(headers, name) {\n  if (!headers) return null;\n  if (Array.isArray(headers)) {\n    let h = headers.find(h => h.name && h.name.toLowerCase() === name.toLowerCase());\n    return h ? h.value : null;\n  }\n  for (let key in headers) {\n    if (key.toLowerCase() === name.toLowerCase()) return headers[key];\n  }\n  return null;\n}\n\nif (from === 'Unknown Sender') {\n  let f = getHeader(email.payload && email.payload.headers, 'from') || getHeader(email.headers, 'from');\n  if (f) from = f;\n}\nif (subject === 'No Subject') {\n  let s = getHeader(email.payload && email.payload.headers, 'subject') || getHeader(email.headers, 'subject');\n  if (s) subject = s;\n}\n\nfunction decodeBase64Url(str) {\n  if (!str) return '';\n  return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');\n}\n\nfunction getBodyText(emailObj) {\n  if (emailObj.textPlain) return emailObj.textPlain;\n  if (emailObj.textHtml) return emailObj.textHtml.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ');\n  let payload = emailObj.payload;\n  if (!payload) return '';\n  if (payload.mimeType === 'text/plain' && payload.body && payload.body.data) return decodeBase64Url(payload.body.data);\n  if (payload.parts && payload.parts.length > 0) {\n    let plainPart = payload.parts.find(p => p.mimeType === 'text/plain');\n    if (plainPart && plainPart.body && plainPart.body.data) return decodeBase64Url(plainPart.body.data);\n    let htmlPart = payload.parts.find(p => p.mimeType === 'text/html');\n    if (htmlPart && htmlPart.body && htmlPart.body.data) return decodeBase64Url(htmlPart.body.data).replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ');\n  }\n  return '';\n}\n\nlet plainTextBody = getBodyText(email) || email.snippet || 'No body content';\nplainTextBody = plainTextBody.replace(/\\s+/g, ' ').trim();\n\nconst emailLink = 'https://mail.google.com/mail/u/0/#inbox/' + (email.threadId || email.id);\nconst date = email.internalDate ? new Date(parseInt(email.internalDate)).toLocaleString() : new Date().toLocaleString();\n\nconst discordMessage = {\n    content: `📨 **New Studio Email** [${targetLabelName}]`,\n    embeds: [\n      {\n        title: subject,\n        description: plainTextBody.substring(0, 1500) + (plainTextBody.length > 1500 ? '...' : ''),\n        url: emailLink,\n        color: embedColor,\n        fields: [\n          { name: \"From\", value: from, inline: true },\n          { name: \"Date\", value: date, inline: true }\n        ]\n      }\n    ]\n};\n\nreturn { json: { webhookUrl: targetWebhookUrl, discordMessage: discordMessage, id: email.id } };"
+      },
+      "id": "format-and-route",
+      "name": "Format and Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [608, 304]
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Format and Route').item.json.id }}"
+      },
+      "id": "gmail-trigger",
+      "name": "Mark As Read",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [176, 160],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DEWU3a5xHeXKmfpP",
+          "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+        }
+      },
+      "webhookId": "9a81334d-ca10-4e38-bca1-67a564b75de9"
+    },
+    {
+      "parameters": { "resource": "label", "returnAll": true },
+      "id": "gmail-get-all-labels-for-mapping",
+      "name": "Gmail: Get All Labels for Mapping",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [176, 464],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DEWU3a5xHeXKmfpP",
+          "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+        }
+      },
+      "webhookId": "54780b5f-21d7-405b-9f6b-65b9944d2285"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      allGmailLabels: JSON.stringify($input.all().map(item => item.json))\n    }\n  }\n];"
+      },
+      "id": "set-all-labels-property",
+      "name": "Set All Labels Property",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [352, 464]
+    },
+    {
+      "id": "schedule-trigger-sonagi",
+      "name": "Schedule Trigger (5m)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [-250, 300],
+      "parameters": { "rule": { "interval": [{ "minutesInterval": 5, "field": "minutes" }] } },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DEWU3a5xHeXKmfpP",
+          "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+        }
+      }
+    },
+    {
+      "id": "gmail-search-unread-sonagi",
+      "name": "Gmail: Search Unread (logs/alerts/billing)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [0, 300],
+      "parameters": {
+        "returnAll": true,
+        "operation": "getAll",
+        "resource": "message",
+        "filters": {
+          "q": "is:unread newer_than:1h (label:경제 OR label:문화 OR label:생활 OR label:요리 OR label:취미 OR label:커리어 OR label:학사 OR label:학습)"
+        },
+        "additionalFields": { "format": "resolved" }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DEWU3a5xHeXKmfpP",
+          "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+        }
+      },
+      "webhookId": "ddcedc7f-35e1-4b0a-9d90-968d3ee860a5"
+    },
+    {
+      "id": "gmail-recovery-search-sonagi",
+      "name": "Gmail: Recovery Search (Last 1d)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [-100, 150],
+      "parameters": {
+        "returnAll": true,
+        "operation": "getAll",
+        "filters": {
+          "q": "newer_than:1d (label:경제 OR label:문화 OR label:생활 OR label:요리 OR label:취미 OR label:커리어 OR label:학사 OR label:학습)"
+        },
+        "resource": "message",
+        "additionalFields": { "format": "resolved" }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DEWU3a5xHeXKmfpP",
+          "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+        }
+      },
+      "webhookId": "121985d0-2ab6-44b7-86b9-e331eed40828"
+    },
+    {
+      "id": "webhook-recovery-trigger-sonagi",
+      "name": "Webhook Recovery Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-400, 150],
+      "parameters": {
+        "path": "recovery-hoofoo1021",
+        "httpMethod": "GET",
+        "respondWith": "text",
+        "responseBody": "Recovery started..."
+      },
+      "webhookId": "c7cbad38-4dd8-4596-8a95-6470618e5d5f"
+    },
+    {
+      "id": "inspect-message-sonagi",
+      "name": "Inspect Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 450],
+      "parameters": {
+        "jsCode": "console.log(\"SENDING TO DISCORD:\", JSON.stringify($json, null, 2));\nreturn $json;"
+      }
+    },
+    {
+      "id": "native-discord-sonagi",
+      "name": "Discord: Native Webhook Dispatch",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 1,
+      "position": [1000, 304],
+      "parameters": {
+        "options": {
+          "username": "Studio Mail Bridge (sonagi.dev)",
+          "embeds": "={{ JSON.stringify($json.discordMessage.embeds) }}"
+        },
+        "webhookUri": "={{ $json.webhookUrl }}",
+        "text": "={{ $json.discordMessage.content }}"
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (5m)": {
+      "main": [[{ "node": "Gmail: Get All Labels for Mapping", "type": "main", "index": 0 }]]
+    },
+    "Gmail: Get All Labels for Mapping": {
+      "main": [[{ "node": "Set All Labels Property", "type": "main", "index": 0 }]]
+    },
+    "Set All Labels Property": {
+      "main": [
+        [{ "node": "Gmail: Search Unread (logs/alerts/billing)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Gmail: Search Unread (logs/alerts/billing)": {
+      "main": [[{ "node": "Format and Route", "type": "main", "index": 0 }]]
+    },
+    "Format and Route": {
+      "main": [
+        [
+          { "node": "Discord: Native Webhook Dispatch", "type": "main", "index": 0 },
+          { "node": "Inspect Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Webhook Recovery Trigger": {
+      "main": [[{ "node": "Gmail: Recovery Search (Last 1d)", "type": "main", "index": 0 }]]
+    },
+    "Gmail: Recovery Search (Last 1d)": {
+      "main": [[{ "node": "Format and Route", "type": "main", "index": 0 }]]
+    },
+    "Discord: Native Webhook Dispatch": {
+      "main": [[{ "node": "Mark As Read", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "i2JKJpVqYYXbnlkd"
+  },
+  "staticData": { "node:Schedule Trigger (5m)": { "recurrenceRules": [] } },
+  "meta": null,
+  "pinData": null,
+  "versionId": "e7181eba-6bd2-463e-920d-9116f41e1e9f",
+  "activeVersionId": "e7181eba-6bd2-463e-920d-9116f41e1e9f",
+  "versionCounter": 70,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-06-12T14:37:26.976Z",
+      "createdAt": "2026-06-12T14:37:26.976Z",
+      "role": "workflow:owner",
+      "workflowId": "tbtaxDnYBrehFPzN",
+      "projectId": "j9kPqlUKbAGT3iOa",
+      "project": {
+        "updatedAt": "2025-10-18T15:25:41.307Z",
+        "createdAt": "2025-10-17T06:12:44.875Z",
+        "id": "j9kPqlUKbAGT3iOa",
+        "name": "Dulle Min <mindullestudio@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "708916a4-76f1-4477-a275-6114c2d9deb6"
+      }
+    }
+  ],
+  "tags": [
+    {
+      "updatedAt": null,
+      "createdAt": null,
+      "id": "070dc17a-3845-41d5-b7f3-672905bca420",
+      "name": "Production"
+    },
+    {
+      "updatedAt": null,
+      "createdAt": null,
+      "id": "e451473c-5991-4911-bbc1-a8cc69ff1893",
+      "name": "Bot"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-07-04T15:49:49.886Z",
+    "createdAt": "2026-07-04T15:49:49.886Z",
+    "versionId": "e7181eba-6bd2-463e-920d-9116f41e1e9f",
+    "workflowId": "tbtaxDnYBrehFPzN",
+    "nodes": [
+      {
+        "parameters": {
+          "jsCode": "const email = $json;\nconst labelsRaw = JSON.parse(email.allGmailLabels || \"[]\");\nconst labelsMap = {};\nif (Array.isArray(labelsRaw)) {\n  for (const label of labelsRaw) labelsMap[label.id] = label.name;\n}\nlet targetWebhookUrl = null;\nlet targetLabelName = \"Unknown\";\nlet embedColor = 10181046;\n\nconst webhookUrls = {\n  \"MarketTrends\": \"https://discord.com/api/webhooks/1515005435504099459/X24LEkV_b8Y_t5VWpa92n6_L91ipp0za7ViAnePmopJwXy55NWa7BX4XMsCUWozXW5cj\",\n  \"EducationNews\": \"https://discord.com/api/webhooks/1515005412494151761/G0P9jfJxwIo2xJnWRcky2FjDDg1kZ8TTobqZQLzeJG4psCcBZqnMMzX8DFMRRtEXa5YR\",\n  \"Hiring\": \"https://discord.com/api/webhooks/1515005415979749469/j4elrb__MgZGv8Y9gVKC8qb4W2jT7pdBYA9a9ElRq0qXZSOuFws9fQv9rw-wvAZSNftx\",\n  \"Routines\": \"https://discord.com/api/webhooks/1515005419272143025/Xi5e5rKq8rWF8azXL23BI1HsdMqOyD8sUyzTrYcejRP_4XKRdyfioJ_IvgFBNxQO9R6P\",\n  \"Vibes\": \"https://discord.com/api/webhooks/1515005431016063256/bWGztZfIBf5l3B2LphteiZdlkYSIIv3j0x-O-8Neei4SNWuYmriKsuxO7Et2dIClfVNJ\",\n  \"Internal\": \"https://discord.com/api/webhooks/1484329239795859587/ZSbwFaCWqUpHcNEY1hCwUpfXxbEw3ml4BcYpSC_Ds4hVUdSkErAjbgTowS4GjbXnk8iz\"\n};\n\nconst currentLabelIds = email.labelIds || (email.labels ? email.labels.map(l => l.id) : []);\nfor (const labelId of currentLabelIds) {\n  const labelName = labelsMap[labelId] || \"\";\n  if (labelName) {\n    targetLabelName = labelName;\n    if (labelName === \"경제\") { targetWebhookUrl = webhookUrls[\"MarketTrends\"]; embedColor = 3066993; break; }\n    else if (labelName === \"문화\" || labelName === \"취미\") { targetWebhookUrl = webhookUrls[\"Vibes\"]; embedColor = 15105570; break; }\n    else if (labelName === \"생활\" || labelName === \"요리\") { targetWebhookUrl = webhookUrls[\"Routines\"]; embedColor = 3447003; break; }\n    else if (labelName === \"커리어\") { targetWebhookUrl = webhookUrls[\"Hiring\"]; embedColor = 1146986; break; }\n    else if (labelName === \"학사\" || labelName === \"학습\") { targetWebhookUrl = webhookUrls[\"EducationNews\"]; embedColor = 2123412; break; }\n  }\n}\n\nif (!targetWebhookUrl) {\n  targetWebhookUrl = webhookUrls[\"Internal\"];\n  targetLabelName = \"INBOX/Other\";\n}\n\nlet from = email.From || email.from || email.sender || email.Sender || 'Unknown Sender';\nlet subject = email.Subject || email.subject || 'No Subject';\n\nfunction getHeader(headers, name) {\n  if (!headers) return null;\n  if (Array.isArray(headers)) {\n    let h = headers.find(h => h.name && h.name.toLowerCase() === name.toLowerCase());\n    return h ? h.value : null;\n  }\n  for (let key in headers) {\n    if (key.toLowerCase() === name.toLowerCase()) return headers[key];\n  }\n  return null;\n}\n\nif (from === 'Unknown Sender') {\n  let f = getHeader(email.payload && email.payload.headers, 'from') || getHeader(email.headers, 'from');\n  if (f) from = f;\n}\nif (subject === 'No Subject') {\n  let s = getHeader(email.payload && email.payload.headers, 'subject') || getHeader(email.headers, 'subject');\n  if (s) subject = s;\n}\n\nfunction decodeBase64Url(str) {\n  if (!str) return '';\n  return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');\n}\n\nfunction getBodyText(emailObj) {\n  if (emailObj.textPlain) return emailObj.textPlain;\n  if (emailObj.textHtml) return emailObj.textHtml.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ');\n  let payload = emailObj.payload;\n  if (!payload) return '';\n  if (payload.mimeType === 'text/plain' && payload.body && payload.body.data) return decodeBase64Url(payload.body.data);\n  if (payload.parts && payload.parts.length > 0) {\n    let plainPart = payload.parts.find(p => p.mimeType === 'text/plain');\n    if (plainPart && plainPart.body && plainPart.body.data) return decodeBase64Url(plainPart.body.data);\n    let htmlPart = payload.parts.find(p => p.mimeType === 'text/html');\n    if (htmlPart && htmlPart.body && htmlPart.body.data) return decodeBase64Url(htmlPart.body.data).replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ');\n  }\n  return '';\n}\n\nlet plainTextBody = getBodyText(email) || email.snippet || 'No body content';\nplainTextBody = plainTextBody.replace(/\\s+/g, ' ').trim();\n\nconst emailLink = 'https://mail.google.com/mail/u/0/#inbox/' + (email.threadId || email.id);\nconst date = email.internalDate ? new Date(parseInt(email.internalDate)).toLocaleString() : new Date().toLocaleString();\n\nconst discordMessage = {\n    content: `📨 **New Studio Email** [${targetLabelName}]`,\n    embeds: [\n      {\n        title: subject,\n        description: plainTextBody.substring(0, 1500) + (plainTextBody.length > 1500 ? '...' : ''),\n        url: emailLink,\n        color: embedColor,\n        fields: [\n          { name: \"From\", value: from, inline: true },\n          { name: \"Date\", value: date, inline: true }\n        ]\n      }\n    ]\n};\n\nreturn { json: { webhookUrl: targetWebhookUrl, discordMessage: discordMessage, id: email.id } };"
+        },
+        "id": "format-and-route",
+        "name": "Format and Route",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [608, 304]
+      },
+      {
+        "parameters": {
+          "operation": "markAsRead",
+          "messageId": "={{ $('Format and Route').item.json.id }}"
+        },
+        "id": "gmail-trigger",
+        "name": "Mark As Read",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [176, 160],
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "DEWU3a5xHeXKmfpP",
+            "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+          }
+        },
+        "webhookId": "9a81334d-ca10-4e38-bca1-67a564b75de9"
+      },
+      {
+        "parameters": { "resource": "label", "returnAll": true },
+        "id": "gmail-get-all-labels-for-mapping",
+        "name": "Gmail: Get All Labels for Mapping",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [176, 464],
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "DEWU3a5xHeXKmfpP",
+            "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+          }
+        },
+        "webhookId": "54780b5f-21d7-405b-9f6b-65b9944d2285"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [\n  {\n    json: {\n      allGmailLabels: JSON.stringify($input.all().map(item => item.json))\n    }\n  }\n];"
+        },
+        "id": "set-all-labels-property",
+        "name": "Set All Labels Property",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [352, 464]
+      },
+      {
+        "id": "schedule-trigger-sonagi",
+        "name": "Schedule Trigger (5m)",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.1,
+        "position": [-250, 300],
+        "parameters": { "rule": { "interval": [{ "minutesInterval": 5, "field": "minutes" }] } },
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "DEWU3a5xHeXKmfpP",
+            "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+          }
+        }
+      },
+      {
+        "id": "gmail-search-unread-sonagi",
+        "name": "Gmail: Search Unread (logs/alerts/billing)",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [0, 300],
+        "parameters": {
+          "returnAll": true,
+          "operation": "getAll",
+          "resource": "message",
+          "filters": {
+            "q": "is:unread newer_than:1h (label:경제 OR label:문화 OR label:생활 OR label:요리 OR label:취미 OR label:커리어 OR label:학사 OR label:학습)"
+          },
+          "additionalFields": { "format": "resolved" }
+        },
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "DEWU3a5xHeXKmfpP",
+            "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+          }
+        },
+        "webhookId": "ddcedc7f-35e1-4b0a-9d90-968d3ee860a5"
+      },
+      {
+        "id": "gmail-recovery-search-sonagi",
+        "name": "Gmail: Recovery Search (Last 1d)",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [-100, 150],
+        "parameters": {
+          "returnAll": true,
+          "operation": "getAll",
+          "filters": {
+            "q": "newer_than:1d (label:경제 OR label:문화 OR label:생활 OR label:요리 OR label:취미 OR label:커리어 OR label:학사 OR label:학습)"
+          },
+          "resource": "message",
+          "additionalFields": { "format": "resolved" }
+        },
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "DEWU3a5xHeXKmfpP",
+            "name": "Gmail account - hoofoo1021 (Sub-Workflow)"
+          }
+        },
+        "webhookId": "121985d0-2ab6-44b7-86b9-e331eed40828"
+      },
+      {
+        "id": "webhook-recovery-trigger-sonagi",
+        "name": "Webhook Recovery Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [-400, 150],
+        "parameters": {
+          "path": "recovery-hoofoo1021",
+          "httpMethod": "GET",
+          "respondWith": "text",
+          "responseBody": "Recovery started..."
+        },
+        "webhookId": "c7cbad38-4dd8-4596-8a95-6470618e5d5f"
+      },
+      {
+        "id": "inspect-message-sonagi",
+        "name": "Inspect Message",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [750, 450],
+        "parameters": {
+          "jsCode": "console.log(\"SENDING TO DISCORD:\", JSON.stringify($json, null, 2));\nreturn $json;"
+        }
+      },
+      {
+        "id": "native-discord-sonagi",
+        "name": "Discord: Native Webhook Dispatch",
+        "type": "n8n-nodes-base.discord",
+        "typeVersion": 1,
+        "position": [1000, 304],
+        "parameters": {
+          "options": {
+            "username": "Studio Mail Bridge (sonagi.dev)",
+            "embeds": "={{ JSON.stringify($json.discordMessage.embeds) }}"
+          },
+          "webhookUri": "={{ $json.webhookUrl }}",
+          "text": "={{ $json.discordMessage.content }}"
+        }
+      }
+    ],
+    "connections": {
+      "Schedule Trigger (5m)": {
+        "main": [[{ "node": "Gmail: Get All Labels for Mapping", "type": "main", "index": 0 }]]
+      },
+      "Gmail: Get All Labels for Mapping": {
+        "main": [[{ "node": "Set All Labels Property", "type": "main", "index": 0 }]]
+      },
+      "Set All Labels Property": {
+        "main": [
+          [{ "node": "Gmail: Search Unread (logs/alerts/billing)", "type": "main", "index": 0 }]
+        ]
+      },
+      "Gmail: Search Unread (logs/alerts/billing)": {
+        "main": [[{ "node": "Format and Route", "type": "main", "index": 0 }]]
+      },
+      "Format and Route": {
+        "main": [
+          [
+            { "node": "Discord: Native Webhook Dispatch", "type": "main", "index": 0 },
+            { "node": "Inspect Message", "type": "main", "index": 0 }
+          ]
+        ]
+      },
+      "Webhook Recovery Trigger": {
+        "main": [[{ "node": "Gmail: Recovery Search (Last 1d)", "type": "main", "index": 0 }]]
+      },
+      "Gmail: Recovery Search (Last 1d)": {
+        "main": [[{ "node": "Format and Route", "type": "main", "index": 0 }]]
+      },
+      "Discord: Native Webhook Dispatch": {
+        "main": [[{ "node": "Mark As Read", "type": "main", "index": 0 }]]
+      }
+    },
+    "authors": "Dulle Min",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-04T15:49:50.016Z",
+        "id": 321,
+        "workflowId": "tbtaxDnYBrehFPzN",
+        "versionId": "e7181eba-6bd2-463e-920d-9116f41e1e9f",
+        "event": "activated",
+        "userId": "708916a4-76f1-4477-a275-6114c2d9deb6"
+      },
+      {
+        "createdAt": "2026-07-04T15:49:51.791Z",
+        "id": 323,
+        "workflowId": "tbtaxDnYBrehFPzN",
+        "versionId": "e7181eba-6bd2-463e-920d-9116f41e1e9f",
+        "event": "activated",
+        "userId": "708916a4-76f1-4477-a275-6114c2d9deb6"
+      },
+      {
+        "createdAt": "2026-07-04T15:49:49.988Z",
+        "id": 320,
+        "workflowId": "tbtaxDnYBrehFPzN",
+        "versionId": "e7181eba-6bd2-463e-920d-9116f41e1e9f",
+        "event": "deactivated",
+        "userId": "708916a4-76f1-4477-a275-6114c2d9deb6"
+      },
+      {
+        "createdAt": "2026-07-04T15:49:50.398Z",
+        "id": 322,
+        "workflowId": "tbtaxDnYBrehFPzN",
+        "versionId": "e7181eba-6bd2-463e-920d-9116f41e1e9f",
+        "event": "deactivated",
+        "userId": "708916a4-76f1-4477-a275-6114c2d9deb6"
+      }
+    ]
+  }
+}

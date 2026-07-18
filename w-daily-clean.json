@@ -1,0 +1,159 @@
+{
+  "name": "Daily Briefing (Notion + Paperclip)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "id": "2d3ae0f6-01f5-4796-af91-5ee99d52ab13"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "38a4abe3-a8af-8156-bd94-000b3c7c5677",
+          "mode": "id"
+        },
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Date|date",
+              "condition": "equals",
+              "date": "={{ $now.setZone('Asia/Seoul').toFormat('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "name": "Notion (Today's Schedule)",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [200, 0],
+      "credentials": {
+        "notionApi": {
+          "id": "lwrIPzFxagksNu6e",
+          "name": "Notion API - BWS Synced"
+        }
+      },
+      "id": "2b3ce547-104a-431c-8db5-e180702d2cf5",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://100.91.9.83:3100/api/companies/3fa0dfa2-9f91-4002-8012-ac598bbb4761/issues",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "todo,in_progress"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer pcp_508e1df1f3ef0ea8512618560aeb1158d374da12292fb5d9"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Paperclip (Pending Issues)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [400, 0],
+      "id": "c763004f-154f-4ed1-936c-c7ad66b7c190"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst notionItems = $items(\"Notion (Today's Schedule)\");\nconst paperclipItems = $items(\"Paperclip (Pending Issues)\");\n\n// 빈 데이터({} 등) 필터링\nconst notionSchedules = notionItems.map(i => i.json).filter(j => Object.keys(j).length > 0);\nconst paperclipIssues = paperclipItems.map(i => i.json).filter(j => Object.keys(j).length > 0);\n\nlet scheduleText = \"\";\nif (notionSchedules.length > 0) {\n  notionSchedules.forEach((j, index) => {\n    // n8n 버전에 따라 property_이름 혹은 바로 이름으로 들어옴\n    const props = j[\"이름\"] || j.property_이름 || j.Name || '제목 없음';\n    scheduleText += `${index + 1}. 📅 ${props}\\n`;\n  });\n} else {\n  scheduleText = \"오늘 예정된 일정이 없습니다. ☕\\n\";\n}\n\nlet issuesText = \"\";\nif (paperclipIssues.length > 0) {\n  const displayIssues = paperclipIssues.slice(0, 5);\n  displayIssues.forEach((issue, index) => {\n    const issueId = issue.id ? issue.id.substring(0,8) : 'N/A';\n    issuesText += `${index + 1}. ⏳ [${issueId}] ${issue.title}\\n`;\n  });\n  if (paperclipIssues.length > 5) issuesText += `...외 ${paperclipIssues.length - 5}건\\n`;\n} else {\n  issuesText = \"마감일이 임박한 대기 이슈가 없습니다. 🎉\\n\";\n}\n\nconst discordMessage = `**☀️ 오늘의 데일리 브리핑**\\n\\n**[오늘의 일정]**\\n${scheduleText}\\n**[대기 중인 주요 이슈]**\\n${issuesText}`;\n\nreturn [{ json: { text: discordMessage } }];\n"
+      },
+      "name": "Format Briefing (Code)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0],
+      "id": "40c266bd-3a32-4837-b395-75e025737df8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/1485602784958218290/1U_cPCn0sp0a6c9xm_pa1GXDguIxLEHiwbthmIl1M4fIAQ9nBIoPusTOJ7RHEB5HaHZw",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"{{ $json.text }}\"\n}",
+        "options": {}
+      },
+      "name": "Discord Webhook (HTTP)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [800, 0],
+      "id": "18118ec8-8c16-49c3-859c-d6a95f8ea24c"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Notion (Today's Schedule)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion (Today's Schedule)": {
+      "main": [
+        [
+          {
+            "node": "Paperclip (Pending Issues)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Paperclip (Pending Issues)": {
+      "main": [
+        [
+          {
+            "node": "Format Briefing (Code)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Briefing (Code)": {
+      "main": [
+        [
+          {
+            "node": "Discord Webhook (HTTP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}

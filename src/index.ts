@@ -6,6 +6,7 @@ import { registerReadyEvent } from './events/ready';
 import { registerInteractionCreateEvent } from './events/interactionCreate';
 import { registerMessageCreateEvent } from './events/messageCreate';
 import { registerMessageReactionAddEvent } from './events/messageReactionAdd';
+import { DashboardService } from './services/dashboard.service';
 import type { CommandMap } from './types/commands';
 
 // Import commands
@@ -106,6 +107,15 @@ async function main() {
 
     // Login to Discord
     await client.login(token);
+
+    // Start Live Dashboard Interval (every 5 minutes)
+    void DashboardService.updateDashboard(client);
+    setInterval(
+      () => {
+        void DashboardService.updateDashboard(client);
+      },
+      5 * 60 * 1000
+    );
 
     // Graceful shutdown
     process.on('SIGINT', () => {

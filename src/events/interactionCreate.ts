@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import { handleCommandError } from '../utils/error-handler';
 import { PaperclipService } from '../services/paperclip';
 import { Colors, createErrorEmbed } from '../utils/embed-builder';
+import { createIssueSuccessEmbed } from '../commands/paperclip/index';
 import type { CommandMap } from '../types/commands';
 
 export function registerInteractionCreateEvent(client: Client, commands: CommandMap): void {
@@ -144,16 +145,7 @@ export function registerInteractionCreateEvent(client: Client, commands: Command
 
             const issue = await PaperclipService.createIssue(companyId, title, description);
 
-            const embed = new EmbedBuilder()
-              .setColor(Colors.SUCCESS)
-              .setTitle('✅ 새로운 이슈가 페이퍼클립에 등록되었습니다.')
-              .setDescription(`**${issue.title}**\n\n${issue.description}`)
-              .addFields(
-                { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
-                { name: '상태', value: issue.status || 'Backlog', inline: true }
-              )
-              .setFooter({ text: 'Paperclip 연동' })
-              .setTimestamp();
+            const embed = createIssueSuccessEmbed(issue);
 
             await interaction.editReply({ embeds: [embed] });
           } catch (error) {

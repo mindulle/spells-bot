@@ -10,7 +10,20 @@ import {
 import type { Command } from '../../types/commands';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import { logger } from '../../utils/logger';
-import { PaperclipService } from '../../services/paperclip';
+import { PaperclipService, PaperclipIssueResponse } from '../../services/paperclip';
+
+export function createIssueSuccessEmbed(issue: PaperclipIssueResponse) {
+  return new EmbedBuilder()
+    .setColor(Colors.SUCCESS)
+    .setTitle('✅ 새로운 이슈가 페이퍼클립에 등록되었습니다.')
+    .setDescription(`**${issue.title}**\n\n${issue.description}`)
+    .addFields(
+      { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
+      { name: '상태', value: issue.status || 'Backlog', inline: true }
+    )
+    .setFooter({ text: 'Paperclip 연동' })
+    .setTimestamp();
+}
 
 const AGENTS = [
   { name: 'Nuri (CTO)', value: '4ec5a12a-49bf-4047-8207-96a4a0723423' },
@@ -170,7 +183,8 @@ export const paperclipCommand: Command = {
 
     if (subcommand === '생성') {
       const title = interaction.options.getString('제목');
-      const description = interaction.options.getString('내용') || '상세 내용 없음';
+      const rawDescription = interaction.options.getString('내용');
+      const description = rawDescription || '상세 내용 없음';
       const companyId = PaperclipService.getCompanyIdFromInteraction(interaction);
 
       if (!process.env.PAPERCLIP_API_TOKEN || !companyId) {
@@ -206,6 +220,10 @@ export const paperclipCommand: Command = {
           .setPlaceholder('에이전트가 이해할 수 있도록 최대한 상세히 적어주세요.')
           .setMaxLength(2000); // 디스코드 모달 텍스트 길이 제한 감안
 
+        if (rawDescription) {
+          descInput.setValue(rawDescription);
+        }
+
         const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(titleInput);
         const secondActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(descInput);
 
@@ -221,17 +239,7 @@ export const paperclipCommand: Command = {
       try {
         const issue = await PaperclipService.createIssue(companyId, title, description);
 
-        // 성공 시 응답할 디스코드 임베드 생성
-        const embed = new EmbedBuilder()
-          .setColor(Colors.SUCCESS)
-          .setTitle('✅ 새로운 이슈가 페이퍼클립에 등록되었습니다.')
-          .setDescription(`**${issue.title}**\n\n${issue.description}`)
-          .addFields(
-            { name: '이슈 ID', value: issue.id || 'N/A', inline: true },
-            { name: '상태', value: issue.status || 'Backlog', inline: true }
-          )
-          .setFooter({ text: 'Paperclip 연동' })
-          .setTimestamp();
+        const embed = createIssueSuccessEmbed(issue);
 
         await interaction.editReply({ embeds: [embed] });
       } catch (error) {

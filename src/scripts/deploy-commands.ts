@@ -12,6 +12,8 @@ import { paperclipAgentCommand } from '../commands/paperclip/agent';
 import { paperclipPlanCommand } from '../commands/paperclip/plan';
 import { scheduleCommand } from '../commands/notion/index';
 import { ledgerCommand } from '../commands/notion/ledger';
+import { todoCommand } from '../commands/notion/todo';
+import { n8nCommand } from '../commands/n8n/index';
 import { radioCommand } from '../commands/radio/index';
 
 dotenv.config();
@@ -28,6 +30,8 @@ const commands = [
   paperclipPlanCommand.data.toJSON(),
   scheduleCommand.data.toJSON(),
   ledgerCommand.data.toJSON(),
+  todoCommand.data.toJSON(),
+  n8nCommand.data.toJSON(),
   radioCommand.data.toJSON(),
 ];
 

@@ -20,6 +20,8 @@ import { paperclipAgentCommand } from './commands/paperclip/agent';
 import { paperclipPlanCommand } from './commands/paperclip/plan';
 import { scheduleCommand } from './commands/notion/index';
 import { ledgerCommand } from './commands/notion/ledger';
+import { todoCommand } from './commands/notion/todo';
+import { n8nCommand } from './commands/n8n/index';
 import { radioCommand } from './commands/radio/index';
 
 import { Player } from 'discord-player';
@@ -85,6 +87,8 @@ async function main() {
       [paperclipPlanCommand.data.name, paperclipPlanCommand],
       [scheduleCommand.data.name, scheduleCommand],
       [ledgerCommand.data.name, ledgerCommand],
+      [todoCommand.data.name, todoCommand],
+      [n8nCommand.data.name, n8nCommand],
       [radioCommand.data.name, radioCommand],
     ]);
 

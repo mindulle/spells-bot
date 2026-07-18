@@ -25,7 +25,7 @@ export const todoCommand: Command = {
             .setRequired(false)
             .addChoices(
               { name: '높음 (High)', value: 'High' },
-              { name: '중간 (Medium)', value: 'Medium' },
+              { name: '보통 (Normal)', value: 'Normal' },
               { name: '낮음 (Low)', value: 'Low' }
             )
         )

@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import type { Command } from '../../types/commands';
 import { healthService } from '../../services/health.service';
+import { DashboardService } from '../../services/dashboard.service';
 import { Colors, createErrorEmbed } from '../../utils/embed-builder';
 import axios from 'axios';
 
@@ -20,6 +21,11 @@ export const infraCommand: Command = {
       subcommand
         .setName('anki-sync')
         .setDescription('llm-wiki 마크다운을 Anki에 수동 동기화합니다.')
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('대시보드')
+        .setDescription('라이브 대시보드를 즉시 새로고침하거나 현재 채널에 새로 띄웁니다.')
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -76,6 +82,24 @@ export const infraCommand: Command = {
             embeds: [createErrorEmbed('Anki Sync 트리거에 실패했습니다. n8n 상태를 확인해주세요.')],
           });
         }
+        break;
+      }
+
+      case '대시보드': {
+        await interaction.deferReply({ ephemeral: true });
+
+        // Use the current channel as the dashboard channel temporarily or trigger an update
+        const originalChannelId = process.env.DASHBOARD_CHANNEL_ID;
+        process.env.DASHBOARD_CHANNEL_ID = interaction.channelId;
+
+        await DashboardService.updateDashboard(interaction.client);
+
+        // Restore original if it existed, otherwise let it keep tracking this channel
+        if (originalChannelId) {
+          process.env.DASHBOARD_CHANNEL_ID = originalChannelId;
+        }
+
+        await interaction.editReply({ content: '✅ 라이브 대시보드가 갱신되었습니다.' });
         break;
       }
 

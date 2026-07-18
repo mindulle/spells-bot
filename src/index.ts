@@ -6,6 +6,7 @@ import { registerReadyEvent } from './events/ready';
 import { registerInteractionCreateEvent } from './events/interactionCreate';
 import { registerMessageCreateEvent } from './events/messageCreate';
 import { registerMessageReactionAddEvent } from './events/messageReactionAdd';
+import { DashboardService } from './services/dashboard.service';
 import type { CommandMap } from './types/commands';
 
 // Import commands
@@ -103,6 +104,14 @@ async function main() {
     registerInteractionCreateEvent(client, commands);
     registerMessageCreateEvent(client);
     registerMessageReactionAddEvent(client);
+
+    // Start Live Dashboard Interval (every 5 minutes)
+    setInterval(
+      () => {
+        void DashboardService.updateDashboard(client);
+      },
+      5 * 60 * 1000
+    );
 
     // Login to Discord
     await client.login(token);

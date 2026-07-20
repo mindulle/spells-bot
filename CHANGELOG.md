@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/mindulle/spells-bot/compare/v1.7.0...v1.7.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* prevent command duplication & add Sentry ([#86](https://github.com/mindulle/spells-bot/issues/86)) ([209012d](https://github.com/mindulle/spells-bot/commit/209012df5f8f20d4161caeb9fc6b90bff78690db))
+
 ## [1.7.0](https://github.com/mindulle/spells-bot/compare/v1.6.1...v1.7.0) (2026-07-18)
 
 ### Features

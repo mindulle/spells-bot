@@ -1,5 +1,44 @@
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import dotenv from 'dotenv';
+dotenv.config();
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  integrations: [nodeProfilingIntegration()],
+  // 성능 트레이싱 (운영에서는 트래픽에 맞게 조절 필요 - 현재는 10%만 수집하여 한도 보호)
+  tracesSampleRate: 0.1,
+  // 프로파일링 (에러나 성능 이슈 발생 시 CPU 스택 수집 - 10%만 수집)
+  profilesSampleRate: 0.1,
+
+  // beforeSend 훅: 불필요한 스팸 에러 필터링 및 개인정보(PII) 마스킹
+  beforeSend(event, hint) {
+    const error = hint.originalException as Error;
+    if (error && error.message) {
+      // 무시할 에러 예시: "Interaction has already been acknowledged."
+      if (
+        error.message.includes('already been acknowledged') ||
+        error.message.includes('Unknown interaction')
+      ) {
+        return null; // Sentry로 보내지 않고 드랍(Drop)
+      }
+    }
+
+    // PII (토큰 등) 스크러빙
+    const eventString = JSON.stringify(event);
+    const token = process.env.DISCORD_TOKEN;
+    if (token && eventString.includes(token)) {
+      // 이 부분은 보안상 매우 중요하므로 토큰값이 로깅되지 않게 처리
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return JSON.parse(eventString.replace(new RegExp(token, 'g'), '[FILTERED_TOKEN]'));
+    }
+
+    return event;
+  },
+});
+
 import { logger } from './utils/logger';
 import { assertEnvVariable } from './utils/error-handler';
 import { registerReadyEvent } from './events/ready';
@@ -28,9 +67,6 @@ import { radioCommand } from './commands/radio/index';
 import { helpCommand } from './commands/help/index';
 
 import { Player } from 'discord-player';
-
-// Load environment variables
-dotenv.config();
 
 export let player: Player;
 

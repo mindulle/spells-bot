@@ -9,9 +9,14 @@ import { utilsCommand } from '../commands/utils/index';
 import { paperclipCommand } from '../commands/paperclip/index';
 import { paperclipApprovalCommand } from '../commands/paperclip/approval';
 import { paperclipAgentCommand } from '../commands/paperclip/agent';
+import { paperclipPlanCommand } from '../commands/paperclip/plan';
 import { scheduleCommand } from '../commands/notion/index';
 import { ledgerCommand } from '../commands/notion/ledger';
+import { todoCommand } from '../commands/todo/index';
+import { addTodoContextMenu } from '../commands/todo/context-menu';
+import { n8nCommand } from '../commands/n8n/index';
 import { radioCommand } from '../commands/radio/index';
+import { helpCommand } from '../commands/help/index';
 
 dotenv.config();
 
@@ -24,9 +29,14 @@ const commands = [
   paperclipCommand.data.toJSON(),
   paperclipApprovalCommand.data.toJSON(),
   paperclipAgentCommand.data.toJSON(),
+  paperclipPlanCommand.data.toJSON(),
   scheduleCommand.data.toJSON(),
   ledgerCommand.data.toJSON(),
+  todoCommand.data.toJSON(),
+  addTodoContextMenu.data.toJSON(),
+  n8nCommand.data.toJSON(),
   radioCommand.data.toJSON(),
+  helpCommand.data.toJSON(),
 ];
 
 const token = process.env.DISCORD_TOKEN;
@@ -73,8 +83,8 @@ export async function deployCommands(guildIds?: string[]) {
     }
 
     console.log('\n📋 Registered commands:');
-    commands.forEach((cmd: { name: string; description: string }) => {
-      console.log(`  - /${cmd.name}: ${cmd.description}`);
+    commands.forEach((cmd: Record<string, any>) => {
+      console.log(`  - /${cmd.name}: ${cmd.description || 'Context Menu'}`);
     });
   } catch (error) {
     console.error('❌ Error deploying commands:', error);

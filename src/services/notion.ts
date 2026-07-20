@@ -1,4 +1,5 @@
 import { Client, isFullPage } from '@notionhq/client';
+import { CreatePageParameters } from '@notionhq/client/build/src/api-endpoints';
 import { logger } from '../utils/logger';
 
 export interface ScheduleItem {
@@ -89,7 +90,7 @@ export class NotionService {
     const todayKst = new Date(today.getTime() + kstOffset);
     const dateString = todayKst.toISOString().split('T')[0];
 
-    const properties: Record<string, any> = {
+    const properties: CreatePageParameters['properties'] = {
       Name: {
         title: [
           {
@@ -238,7 +239,7 @@ export class NotionService {
     const notion = this.getClient();
     const dataSourceId = this.getDataSourceId();
 
-    const properties: Record<string, any> = {
+    const properties: CreatePageParameters['properties'] = {
       이름: {
         title: [
           {

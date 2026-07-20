@@ -46,6 +46,7 @@ import { registerReadyEvent } from './events/ready';
 import { registerInteractionCreateEvent } from './events/interactionCreate';
 import { registerMessageCreateEvent } from './events/messageCreate';
 import { registerMessageReactionAddEvent } from './events/messageReactionAdd';
+import { DashboardService } from './services/dashboard.service';
 import type { CommandMap } from './types/commands';
 
 // Import commands
@@ -57,9 +58,14 @@ import { utilsCommand } from './commands/utils/index';
 import { paperclipCommand } from './commands/paperclip/index';
 import { paperclipApprovalCommand } from './commands/paperclip/approval';
 import { paperclipAgentCommand } from './commands/paperclip/agent';
+import { paperclipPlanCommand } from './commands/paperclip/plan';
 import { scheduleCommand } from './commands/notion/index';
 import { ledgerCommand } from './commands/notion/ledger';
+import { todoCommand } from './commands/todo/index';
+import { addTodoContextMenu } from './commands/todo/context-menu';
+import { n8nCommand } from './commands/n8n/index';
 import { radioCommand } from './commands/radio/index';
+import { helpCommand } from './commands/help/index';
 
 import { Player } from 'discord-player';
 
@@ -118,9 +124,14 @@ async function main() {
       [paperclipCommand.data.name, paperclipCommand],
       [paperclipApprovalCommand.data.name, paperclipApprovalCommand],
       [paperclipAgentCommand.data.name, paperclipAgentCommand],
+      [paperclipPlanCommand.data.name, paperclipPlanCommand],
       [scheduleCommand.data.name, scheduleCommand],
       [ledgerCommand.data.name, ledgerCommand],
+      [todoCommand.data.name, todoCommand],
+      [addTodoContextMenu.data.name, addTodoContextMenu],
+      [n8nCommand.data.name, n8nCommand],
       [radioCommand.data.name, radioCommand],
+      [helpCommand.data.name, helpCommand],
     ]);
 
     logger.info(`Registered ${commands.size} commands`);
@@ -133,6 +144,15 @@ async function main() {
 
     // Login to Discord
     await client.login(token);
+
+    // Start Live Dashboard Interval (every 5 minutes)
+    void DashboardService.updateDashboard(client);
+    setInterval(
+      () => {
+        void DashboardService.updateDashboard(client);
+      },
+      5 * 60 * 1000
+    );
 
     // Graceful shutdown
     process.on('SIGINT', () => {
